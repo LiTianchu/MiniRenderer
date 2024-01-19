@@ -1,6 +1,7 @@
 #include <iostream>
 #include "tgaimage.h"
 #include "model.h"
+#include "he_model.h"
 
 const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red = TGAColor(255, 0, 0, 255);
@@ -9,11 +10,11 @@ const TGAColor blue = TGAColor(0, 0, 255, 255);
 
 void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color);
 void draw_mesh_wireframe(Model model, TGAImage &image);
-void draw_mesh_shaded(Model model, TGAImage texture, float *zbuffer, TGAImage &image, Vec3f light_dir);
+void draw_mesh_shaded(Model model, TGAImage texture, float *zbuffer, TGAImage &image, Vec3f light_dir, bool shade_smooth);
 void triangle_linesweeping(Vec2i tv0, Vec2i tv1, Vec2i tv2, TGAImage &image, TGAColor color);
 void sort_triangle_vertices(Vec2i (&t)[]);
 Vec3f get_barycentric(Vec3f *pts, Vec2i P);
-void triangle_barycentric(Vec3f *pts, Vec2f *tex_coords, TGAImage texture, float *zbuffer, TGAImage &image, TGAColor color);
+void triangle_barycentric(Vec3f *pts, Vec2f *tex_coords, Vec3f *norms, TGAImage texture, float *zbuffer, Vec3f light_dir, TGAImage &image, TGAColor color, bool shade_smooth);
 
 int main(int argc, char **argv)
 {
@@ -24,20 +25,25 @@ int main(int argc, char **argv)
     if (argc >= 2)
     {
         Model model_loaded = Model("obj/african_head.obj");
+        HEModel test_model = HEModel("obj/african_head.obj");
 
         if (std::string(argv[1]) == "wireframe")
         {
             draw_mesh_wireframe(model_loaded, image);
         }
-        else if (std::string(argv[1]) == "shaded")
+        else if (std::string(argv[1]) == "flat")
         {
-            draw_mesh_shaded(model_loaded, TGAImage(), zbuffer, image, Vec3f(0, 0, -1));
+            draw_mesh_shaded(model_loaded, TGAImage(), zbuffer, image, Vec3f(0, 0, -1), false);
+        }
+        else if (std::string(argv[1]) == "smooth")
+        {
+            draw_mesh_shaded(model_loaded, TGAImage(), zbuffer, image, Vec3f(0, 0, -1), true);
         }
         else if (std::string(argv[1]) == "texture")
         {
             TGAImage texture = TGAImage();
             texture.read_tga_file("obj/african_head_diffuse.tga");
-            draw_mesh_shaded(model_loaded, texture, zbuffer, image, Vec3f(0, 0, -1));
+            draw_mesh_shaded(model_loaded, texture, zbuffer, image, Vec3f(0, 0, -1), false);
         }
         else
         {
@@ -103,15 +109,17 @@ void triangle_linesweeping(Vec2i tv0, Vec2i tv1, Vec2i tv2, TGAImage &image, TGA
     }
 }
 
-void triangle_barycentric(Vec3f *pts, Vec2f *tex_coords, TGAImage texture, float *zbuffer, TGAImage &image, TGAColor color)
+void triangle_barycentric(Vec3f *pts, Vec2f *tex_coords, Vec3f *norms, TGAImage texture, 
+                                float *zbuffer, Vec3f light_dir, TGAImage &image, TGAColor color, 
+                                    bool shade_smooth)
 {
     // obtain the bounding box cooridnates
     int x_min = std::min(pts[0].x, std::min(pts[1].x, pts[2].x));
     int x_max = std::max(pts[0].x, std::max(pts[1].x, pts[2].x));
     int y_min = std::min(pts[0].y, std::min(pts[1].y, pts[2].y));
     int y_max = std::max(pts[0].y, std::max(pts[1].y, pts[2].y));
-
-    // clamp the coordinates to prevent exceeding the boundary
+    // std::cout << pts[0].x <<" " << pts[0].y << " " << pts[0].z << " " <<tex_coords[0].u << " " << tex_coords[0].v << std::endl;
+    //  clamp the coordinates to prevent exceeding the boundary
     x_min = std::max(0, x_min);
     x_max = std::min(image.get_width() - 1, x_max);
     y_min = std::max(0, y_min);
@@ -130,16 +138,36 @@ void triangle_barycentric(Vec3f *pts, Vec2f *tex_coords, TGAImage texture, float
 
             // calculate the z value
             float interpolated_z = b_coord.x * pts[0].z + b_coord.y * pts[1].z + b_coord.z * pts[2].z;
-            
-            float interpolated_u = b_coord.x * tex_coords[0].x + b_coord.y * tex_coords[1].x + b_coord.z * tex_coords[2].x;
-            float interpolated_v = b_coord.x * tex_coords[0].y + b_coord.y * tex_coords[1].y + b_coord.z * tex_coords[2].y;
-            
-            // std::cout << interpolated_z << std::endl;
+
             int zbuffer_index = x + y * image.get_width();
             if (interpolated_z > zbuffer[zbuffer_index])
             {
                 zbuffer[zbuffer_index] = interpolated_z;
-                image.set(x, y, texture.get(interpolated_u * texture.get_width(), interpolated_v * texture.get_height()));
+                if (texture.get_width() == 0)
+                { // has no texture shade using color
+                    // std::cout << "Shading with color" << std::endl;
+                    TGAColor shade_color;
+                    if(shade_smooth){
+                        std::vector<float> I_at_vertices = {norms[0] * light_dir, norms[1] * light_dir, norms[2] * light_dir};
+                        float interpolated_I = b_coord.x * I_at_vertices[0] + b_coord.y * I_at_vertices[1] + b_coord.z * I_at_vertices[2];
+                        shade_color = TGAColor(color.r * interpolated_I, color.g * interpolated_I, color.b * interpolated_I, 255);
+                    }else{
+                        shade_color = color;
+                    }
+                    image.set(x, y, shade_color);
+                }
+                else
+                {
+                    //std::vector<float> I_at_vertices = {norms[0] * light_dir, norms[1] * light_dir, norms[2] * light_dir};
+                    //float interpolated_I = b_coord.x * I_at_vertices[0] + b_coord.y * I_at_vertices[1] + b_coord.z * I_at_vertices[2];
+                    float interpolated_u = b_coord.x * tex_coords[0].u + b_coord.y * tex_coords[1].u + b_coord.z * tex_coords[2].u;
+                    float interpolated_v = b_coord.x * tex_coords[0].v + b_coord.y * tex_coords[1].v + b_coord.z * tex_coords[2].v;
+                    TGAColor base_color = texture.get(interpolated_u * texture.get_width(), interpolated_v * texture.get_height());
+                    //TGAColor shade_color = TGAColor(base_color.r * interpolated_I, base_color.g * interpolated_I, base_color.b * interpolated_I, 255);
+
+                    image.set(x, y, base_color);
+                    // std::cout << "Shading with texture" << std::endl;
+                }
             }
         }
     }
@@ -188,37 +216,41 @@ void draw_mesh_wireframe(Model model, TGAImage &image)
     }
 }
 
-void draw_mesh_shaded(Model model, TGAImage texture, float *zbuffer, TGAImage &image, Vec3f light_dir)
+void draw_mesh_shaded(Model model, TGAImage texture, float *zbuffer, TGAImage &image, Vec3f light_dir, bool shade_smooth)
 {
     // for each face in the model
 
     for (int i = 0; i < model.nfaces(); i++)
     {
         std::vector<Vec3i> face = model.face(i); // obtain the triangle indices of the current face
+
         Vec3f t_screen[3];
         Vec3f t_world[3];
         Vec2f t_uv[3];
+        Vec3f t_norm[3];
         // foreach vertex of the current face, render a line from the current vertex to the next vertex
         for (int j = 0; j < 3; j++)
         {
             Vec3 vertex_world = model.vert(face[j].ivert);
             Vec2f uv = model.uv(face[j].iuv);
+            Vec3f norm = model.norm(face[j].inorm);
             // map the world coordinates to image coordinates
             int x_screen = (vertex_world.x + 1.0) / 2.0 * image.get_width();
             int y_screen = (vertex_world.y + 1.0) / 2.0 * image.get_height();
             t_world[j] = vertex_world;
             t_screen[j] = Vec3f(x_screen, y_screen, (vertex_world.z + 1.0) / 2.0);
             t_uv[j] = uv;
+            t_norm[j] = norm * -1;
         }
         // compute normal
         Vec3f normal = (t_world[2] - t_world[0]).cross(t_world[1] - t_world[0]);
         normal.normalize();
 
-        float intensity = normal * light_dir;
+        float intensity = shade_smooth ? 1 : normal * light_dir; //if shade smooth is chosen, will compute the intensity in triangle rasterization stage
 
         if (intensity > 0)
         {
-            triangle_barycentric(t_screen, t_uv, texture, zbuffer, image, TGAColor(255 * intensity, 255 * intensity, 255 * intensity, 255));
+            triangle_barycentric(t_screen, t_uv, t_norm, texture, zbuffer, light_dir, image, TGAColor(255 * intensity, 255 * intensity, 255 * intensity, 255), shade_smooth);
         }
     }
 }

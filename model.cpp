@@ -5,7 +5,7 @@
 #include <vector>
 #include "model.h"
 
-Model::Model(const char *filename) : verts_(), faces_(), uv_()
+Model::Model(const char *filename) : verts_(), faces_(), uv_(), norms_()
 {
     std::ifstream in;
     in.open(filename, std::ifstream::in);
@@ -15,7 +15,7 @@ Model::Model(const char *filename) : verts_(), faces_(), uv_()
     while (!in.eof())
     {
         std::getline(in, line);
-        std::istringstream iss(line.c_str());
+        std::istringstream iss(line);
         char trash;
         if (!line.compare(0, 2, "v "))
         {
@@ -29,10 +29,19 @@ Model::Model(const char *filename) : verts_(), faces_(), uv_()
         {
             iss >> trash >> trash;
             Vec2f uv;
-            for (int i = 0; i < 2; i++)
-                iss >> uv.raw[i];
+            iss >> uv.u;
+            iss >> uv.v;
+            uv.v = 1-uv.v; //uv starts from top left
             uv_.push_back(uv);
             //std::cout << uv << std::endl;
+        }
+        else if(!line.compare(0,3, "vn ")){
+            iss >> trash >> trash;
+            Vec3f norm;
+            iss >> norm.x;
+            iss >> norm.y;
+            iss >> norm.z;
+            norms_.push_back(norm);
         }
         else if (!line.compare(0, 2, "f "))
         {
@@ -42,13 +51,15 @@ Model::Model(const char *filename) : verts_(), faces_(), uv_()
             while (iss >> idx >> trash >> iuv >> trash >> inorm)
             {
                 idx--; // in wavefront obj all indices start at 1, not zero
+                iuv--;
+                inorm--;
                 f.push_back(Vec3i(idx, iuv, inorm));
                 //std::cout << idx << " " << iuv << " " << inorm << std::endl;
             }
             faces_.push_back(f);
         }
     }
-    std::cerr << "# v# " << verts_.size() << " f# " << faces_.size() << std::endl;
+    std::cerr << "# v# " << verts_.size() << " vt# " << uv_.size() << " vn# " << norms_.size() << " f# " << faces_.size() << std::endl;
 }
 
 Model::~Model()
@@ -78,4 +89,8 @@ Vec3f Model::vert(int i)
 Vec2f Model::uv(int i)
 {
     return uv_[i];
+}
+
+Vec3f Model::norm(int i){
+    return norms_[i].normalize();
 }
