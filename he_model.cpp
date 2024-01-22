@@ -5,11 +5,11 @@
 #include <string>
 #include "he_model.h"
 
-HEModel::HEModel(const char *filename) : edges(), faces(), vertices()
+HEModel::HEModel(const char *filename) : h_edges(), faces(), vertices()
 { // constructor definition
+    std::cout << "HEModel constructor called" << std::endl;
     std::ifstream in;
     in.open(filename, std::ifstream::in);
-
     if (in.fail())
     {
         std::cout << "Cannot open model file " << filename << std::endl;
@@ -23,7 +23,7 @@ HEModel::HEModel(const char *filename) : edges(), faces(), vertices()
     int p_count;
     int n_count;
     int tc_count;
-
+    std::vector<std::vector<Vertex*>> triangles;
     while (!in.eof())
     {
         std::getline(in, line);
@@ -58,59 +58,89 @@ HEModel::HEModel(const char *filename) : edges(), faces(), vertices()
         else if (!line.compare(0, 2, "f "))
         {
             int ipos, itc, inorm;
-            std::vector<Vertex> tri;
+            std::vector<Vertex*> tri;
             iss >> trash;
             while (iss >> ipos >> trash >> itc >> trash >> inorm)
             {
                 --ipos; //.obj file is 1-indexed :(
                 --itc;
                 --inorm;
+                
+                Vertex* v; //create the vertex object
+                std::cout << 1 << std::endl;
+                v->index = ipos; //this line has error
+                std::cout << 2 << std::endl;
 
-                Vertex v; //create the vertex object
-                v.pos = norm_list[ipos];
-                v.tex_coord = tex_coord_list[itc];
-                v.norm = norm_list[inorm];
+                std::pair pair = vertices.insert(v);
+
+                //if has duplicate value in the set, then reference v to that duplicate value
+                if (!pair.second)
+                {
+                    v = *pair.first;
+                    std::cout << "duplicate: "<< &(*pair.first) << "v: " << v << std::endl;
+                }
+                else
+                {
+                    v->pos = pos_list[ipos];
+                    v->tex_coord = tex_coord_list[itc];
+                    v->norm = norm_list[inorm];
+                }
+
                 tri.push_back(v);
             }
 
-            //saving half edge
-            HEdge he1;
-            HEdge he2;
-            HEdge he3;
-            Face f;
-
-            he1.next = &he2;
-            he2.next = &he3;
-            he3.next = &he1;
-            he1.v = &tri[1];
-            he2.v = &tri[2];
-            he3.v = &tri[0];
-            he1.f = &f;
-            he2.f = &f;
-            he3.f = &f;
-
-            f.h = &he1;
-
-            tri[0].h = &he3;
-            tri[1].h = &he1;
-            tri[2].h = &he2;
-
-            edges.insert(he1);
-            edges.insert(he2);
-            edges.insert(he3);
-            faces.insert(f);
-            vertices.insert(tri[0]);
-            vertices.insert(tri[1]);
-            vertices.insert(tri[2]);
-
-            
+            triangles.push_back(tri);
         }
+
+    }
+  
+    //save the triangles as half edge data structure
+    for (int i = 0; i < triangles.size(); i++)
+    {
+        Face f;
+        std::vector<HEdge> h_edges_temp;
+        for (int j = 0; j < triangles[i].size(); j++)
+        {
+            HEdge h_edge;
+            //get the vertex at head
+            Vertex* v = triangles[i][j];
+            v->h = &h_edge;
+            h_edge.v = triangles[i][j];
+            h_edge.f = &f;
+            h_edges_temp.push_back(h_edge);
+        }
+        
+        f.h = &h_edges_temp[i];
+        faces.push_back(&f);
+        for(int j = 0; j < h_edges_temp.size(); j++){
+            int prev_index = j-1 < 0 ? h_edges_temp.size() - 1 :j - 1; //if j is 0, then prev_index is the last index
+            int next_index = j+1 >= h_edges_temp.size() ? 0 : j + 1; //if j is the last index, then next_index is 0
+
+            h_edges_temp[j].next = &h_edges_temp[next_index];
+            h_edges_temp[j].prev = &h_edges_temp[prev_index];
+
+            //try to find a pair of this edge in the vector
+            //if found, then assign the pair to each other
+            //if not found, then add this edge to the list
+            //bool found = false;
+            for(int k = 0; k < h_edges.size(); k++){
+                if(h_edges[k]->v == h_edges_temp[j].prev->v && h_edges[k]->prev->v == h_edges_temp[j].v){
+                    h_edges_temp[j].pair = h_edges[k];
+                    h_edges[k]->pair = &h_edges_temp[j];
+                    //found = true;
+                    break;
+                }
+            }
+            //if(!found){
+            h_edges.push_back(&h_edges_temp[j]);
+            //}
+        } 
     }
 
-    std::cout << "h_edges: " << edges.size() << "faces: " << faces.size() << "vertices: " <<vertices.size() << std::endl; 
-
-    //find the pairs of each half edge
+    std::cout << "h_edges: " << h_edges.size() << "faces: " << faces.size() << "vertices: " <<vertices.size() << std::endl; 
 }
+
+
 
 HEModel::~HEModel()
 {

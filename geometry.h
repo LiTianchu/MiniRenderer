@@ -25,6 +25,10 @@ struct Vec2
 	inline Vec2<t> operator+(const Vec2<t> &V) const { return Vec2<t>(u + V.u, v + V.v); }
 	inline Vec2<t> operator-(const Vec2<t> &V) const { return Vec2<t>(u - V.u, v - V.v); }
 	inline Vec2<t> operator*(float f) const { return Vec2<t>(u * f, v * f); }
+	inline bool operator==(const Vec2<t> &V) const { return (u == V.u && v == V.v); }
+	inline bool operator!=(const Vec2<t> &V) const { return (u != V.u || v != V.v); }
+	inline bool operator<(const Vec2<t> &V) const { return (u < V.u && v < V.v); }
+	inline bool operator>(const Vec2<t> &V) const { return (u > V.u && v > V.v); }
 	template <class>
 	friend std::ostream &operator<<(std::ostream &s, Vec2<t> &v);
 };
@@ -51,6 +55,10 @@ struct Vec3
 	inline Vec3<t> operator-(const Vec3<t> &v) const { return Vec3<t>(x - v.x, y - v.y, z - v.z); }
 	inline Vec3<t> operator*(float f) const { return Vec3<t>(x * f, y * f, z * f); } //dot product operator
 	inline t operator*(const Vec3<t> &v) const { return x * v.x + y * v.y + z * v.z; }
+	inline bool operator==(const Vec3<t> &v) const { return x == v.x && y == v.y && z == v.z; }
+	inline bool operator!=(const Vec3<t> &v) const { return x != v.x || y != v.y || z != v.z; }
+	inline bool operator<(const Vec3<t> &v) const { return x < v.x && y < v.y && z < v.z; }
+	inline bool operator>(const Vec3<t> &v) const { return x > v.x && y > v.y && z > v.z; }
 	float norm() const { return std::sqrt(x * x + y * y + z * z); }
 	Vec3<t> cross(Vec3<t> other) const { return Vec3<t>{y * other.z - z * other.y, -(x * other.z - z * other.x), x * other.y - y * other.x}; }
 	Vec3<t> dot(Vec3<t> other) const { return Vec3<t>{x * other.x, y * other.y, z * other.z}; }
