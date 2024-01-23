@@ -9,7 +9,7 @@
 
 HEModel::HEModel(const char *filename) : h_edges(), faces(), vertices()
 { // constructor definition
-    std::cout << "HEModel constructor called" << std::endl;
+    std::cout << "Loading Half-Edge model..." << std::endl;
     std::ifstream in;
     in.open(filename, std::ifstream::in);
     if (in.fail())
@@ -46,6 +46,7 @@ HEModel::HEModel(const char *filename) : h_edges(), faces(), vertices()
             Vec2f tex_coord;
             iss >> tex_coord.u;
             iss >> tex_coord.v;
+            
             tex_coord_list.push_back(tex_coord);
         }
         else if (!line.compare(0, 3, "vn "))
@@ -94,15 +95,18 @@ HEModel::HEModel(const char *filename) : h_edges(), faces(), vertices()
 
     int num_of_pairs_found = 0;
 
+    //lambda for hashing of edges
     auto edge_hash = [](const Edge* a){
         return std::hash<int>{}(a->v1->index) ^ std::hash<int>{}(a->v2->index);
     };
 
+    //lambda for equality of edges
     auto edge_equal = [](const Edge* a, const Edge* b) {
     // Compare edges based on their vertices, regardless of the order
     return (a->v1 == b->v1 && a->v2 == b->v2) || (a->v1 == b->v2 && a->v2 == b->v1);
     };
 
+    //a temporary hash set for checking whether an edge(undirected) is already inserted
     std::unordered_set<Edge*, decltype(edge_hash), decltype(edge_equal)> edges_temp(10,edge_hash,edge_equal);
 
     for (int i = 0; i < triangles.size(); i++)
@@ -132,15 +136,19 @@ HEModel::HEModel(const char *filename) : h_edges(), faces(), vertices()
             Vertex *start_v = h_edges_temp[j]->prev->v;
             Vertex *end_v = h_edges_temp[j]->v;
 
+            //creating an undirected edge to test for the containment of the other opposite half edge
             Edge *e = new Edge();
             e->v1 = start_v;
             e->v2 = end_v;
             e->h = h_edges_temp[j];
+
             //attempt to insert to undirected edge set
             std::pair insert_result = edges_temp.insert(e);
-            if(!insert_result.second) //has duplicate
+            if(!insert_result.second) //if has duplicate, it means an half edge already in the list
             {
                 num_of_pairs_found++;
+
+                //retrieve the half edge and pair the edges to each other
                 h_edges_temp[j]->pair = ((*insert_result.first)->h);
                 ((*insert_result.first)->h)->pair = h_edges_temp[j];
             }
@@ -154,26 +162,15 @@ HEModel::HEModel(const char *filename) : h_edges(), faces(), vertices()
         faces.insert(f); // add the face to the list of faces
     }
 
-     // h_edges.insert(h_edges_temp[j]);
-
-            // for (auto it = h_edges.begin(); it != h_edges.end(); it++)
-            // {
-            //     if ((*it)->v == start_v && // check if the edge match the opposite orientation condition
-            //         (*it)->prev->v == end_v)
-            //     {
-            //         num_of_pairs_found++;
-            //         h_edges_temp[j]->pair = *it;   // set the pair of the current half edge
-            //         (*it)->pair = h_edges_temp[j]; // set the pair's pair to the current half edge
-            //         break;
-            //     }
-            // }
-
-    std::cout << "HEModel constructor finished" << std::endl;
-    std::cout << "h_edges size: " << h_edges.size() << std::endl;
-    std::cout << "pairs size: " << num_of_pairs_found << std::endl;
-    std::cout << "faces size: " << faces.size() << std::endl;
-    std::cout << "vertices size: " << vertices.size() << std::endl;
+    std::cout << "Half-Edge model loading finished, analysis below:" << std::endl;
+    std::cout << "\th_edges size: " << h_edges.size() << std::endl;
+    std::cout << "\tpairs size: " << num_of_pairs_found << std::endl;
+    std::cout << "\tfaces size: " << faces.size() << std::endl;
+    std::cout << "\tvertices size: " << vertices.size() << std::endl;
     int num_of_edges_no_pair = 0;
+    int num_of_vertices_no_norm = 0;
+    int num_of_vertices_no_uv = 0;
+    int num_of_vertices_no_pos = 0;
     for (std::set<HEdge *>::iterator it = h_edges.begin(); it != h_edges.end(); ++it)
     {
         if ((*it)->pair == NULL)
@@ -181,7 +178,21 @@ HEModel::HEModel(const char *filename) : h_edges(), faces(), vertices()
             num_of_edges_no_pair++;
         }
     }
-    std::cout << "num of edges with no pair: " << num_of_edges_no_pair << std::endl;
+    for(std::set<Vertex*>::iterator it = vertices.begin();it!=vertices.end();++it){
+        if((*it)->norm == Vec3f()){
+            num_of_vertices_no_norm++;
+        }
+        if((*it)->tex_coord==Vec2f()){
+            num_of_vertices_no_uv++;
+        }
+        if((*it)->pos==Vec3f()){
+            num_of_vertices_no_pos++;
+        }
+    }
+    std::cout << "\tnum of edges with no pair: " << num_of_edges_no_pair << std::endl;
+    std::cout << "\tnum of vertices with no pos data: " << num_of_vertices_no_pos << std::endl;
+    std::cout << "\tnum of vertices with no uv data: " << num_of_vertices_no_uv << std::endl;
+    std::cout << "\tnum of vertices with no normal data: " << num_of_vertices_no_norm << std::endl;
 }
 
 HEModel::~HEModel()

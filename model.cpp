@@ -32,7 +32,7 @@ Model::Model(const char *filename) : verts_(), faces_(), uv_(), norms_()
             Vec2f uv;
             iss >> uv.u;
             iss >> uv.v;
-            uv.v = 1-uv.v; //uv starts from top left
+            
             uv_.push_back(uv);
             //std::cout << uv << std::endl;
         }

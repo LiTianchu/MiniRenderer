@@ -24,12 +24,11 @@ struct HEdge
 	inline bool operator>(const HEdge &he) const { return index > he.index; };
 };
 
-struct Edge
+struct Edge //undirected edge used for checkings when loading data, not involved in the final data structure
 {
-	Vertex *v1;
+	Vertex *v1; //vertices of the 2 ends, order does not matter
 	Vertex *v2;
-	HEdge *h;
-	int index;
+	HEdge *h; //one of the half edge belong to this undirected edge
 };
 
 
