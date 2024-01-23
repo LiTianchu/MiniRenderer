@@ -59,7 +59,12 @@ private:
 public:
 	HEModel(const char *filename);
 	~HEModel();
-
+	std::vector<HEdge*>::iterator h_edges_begin() { return h_edges.begin(); }
+	std::vector<HEdge*>::iterator h_edges_end() { return h_edges.end(); }
+	std::vector<Face*>::iterator faces_begin() { return faces.begin(); }
+	std::vector<Face*>::iterator faces_end() { return faces.end(); }
+	std::set<Vertex*>::iterator vertices_begin() { return vertices.begin(); }
+	std::set<Vertex*>::iterator vertices_end() { return vertices.end(); }
 };
 
 #endif

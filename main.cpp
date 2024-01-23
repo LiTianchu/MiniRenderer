@@ -9,7 +9,9 @@ const TGAColor green = TGAColor(0, 255, 0, 255);
 const TGAColor blue = TGAColor(0, 0, 255, 255);
 
 void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color);
+void draw_mesh_wireframe(HEModel model, TGAImage &image);
 void draw_mesh_wireframe(Model model, TGAImage &image);
+void draw_mesh_shaded(HEModel model, TGAImage texture, float *zbuffer, TGAImage &image, Vec3f light_dir, bool shade_smooth);
 void draw_mesh_shaded(Model model, TGAImage texture, float *zbuffer, TGAImage &image, Vec3f light_dir, bool shade_smooth);
 void triangle_linesweeping(Vec2i tv0, Vec2i tv1, Vec2i tv2, TGAImage &image, TGAColor color);
 void sort_triangle_vertices(Vec2i (&t)[]);
@@ -29,7 +31,7 @@ int main(int argc, char **argv)
 
         if (std::string(argv[1]) == "wireframe")
         {
-            draw_mesh_wireframe(model_loaded, image);
+            draw_mesh_wireframe(test_model, image);
         }
         else if (std::string(argv[1]) == "flat")
         {
@@ -185,6 +187,61 @@ Vec3f get_barycentric(Vec3f *pts, Vec2i P)
     if (c.x < 0 || c.y < 0 || c.x + c.y > 1)
         return Vec3f(-1, 1, 1);            // if u or v is negative or their sum greater than 1, it is outside of triangle, return (-1,1,1)
     return Vec3f(1 - c.x - c.y, c.x, c.y); // calculate and return the alpha, beta and gamma
+}
+
+void draw_mesh_wireframe(HEModel model, TGAImage &image)
+{
+    // for each face in the model
+    for (std::vector<Face*>::iterator face = model.faces_begin(); face!=model.faces_end();++face)
+    {
+        HEdge* h_edge = (*face)->h;
+        while(h_edge->next != (*face)->h){
+            // std::cout << "face[" << i << "][" << j << "] = " << face[j] << std::endl;
+            HEdge* prev = h_edge->prev;
+            HEdge* next = h_edge->next;
+            HEdge p = *prev;
+            std::cout << "prev = " << prev << " v: " << prev->v << std::endl;
+            Vertex *vertex_start = prev->v;
+            Vertex *vertex_end = h_edge->v;
+            Vec3 pos_start = vertex_start->pos;
+            Vec3 pos_end = vertex_end->pos;
+
+            // std::cout << "vertex_start = " << vertex_start << std::endl;
+            // std::cout << "vertex_end = " << vertex_end << std::endl;
+
+            // map the world coordinates to image coordinates
+            int x0 = (pos_start.x + 1.0) / 2.0 * image.get_width();
+            int y0 = (pos_start.y + 1.0) / 2.0 * image.get_height();
+            int x1 = (pos_end.x + 1.0) / 2.0 * image.get_width();
+            int y1 = (pos_end.y + 1.0) / 2.0 * image.get_height();
+
+            // std::cout << x0 << " " << y0 << " " << x1 << " " << y1 << std::endl;
+            // draw the line
+            line(x0, y0, x1, y1, image, white);
+            h_edge = h_edge->next;
+        }
+        // std::vector<Vec3i> face = model.face(i); // obtain the triangle indices of the current face
+        // // foreach vertex of the current face, render a line from the current vertex to the next vertex
+        // for (int j = 0; j < 3; j++)
+        // {
+        //     // std::cout << "face[" << i << "][" << j << "] = " << face[j] << std::endl;
+        //     Vec3 vertex_start = model.vert(face[j].ivert);
+        //     Vec3 vertex_end = model.vert(face[(j + 1) % 3].ivert);
+
+        //     // std::cout << "vertex_start = " << vertex_start << std::endl;
+        //     // std::cout << "vertex_end = " << vertex_end << std::endl;
+
+        //     // map the world coordinates to image coordinates
+        //     int x0 = (vertex_start.x + 1.0) / 2.0 * image.get_width();
+        //     int y0 = (vertex_start.y + 1.0) / 2.0 * image.get_height();
+        //     int x1 = (vertex_end.x + 1.0) / 2.0 * image.get_width();
+        //     int y1 = (vertex_end.y + 1.0) / 2.0 * image.get_height();
+
+        //     // std::cout << x0 << " " << y0 << " " << x1 << " " << y1 << std::endl;
+        //     // draw the line
+        //     line(x0, y0, x1, y1, image, white);
+        // }
+    }
 }
 
 void draw_mesh_wireframe(Model model, TGAImage &image)

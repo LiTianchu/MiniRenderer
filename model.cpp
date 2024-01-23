@@ -7,6 +7,7 @@
 
 Model::Model(const char *filename) : verts_(), faces_(), uv_(), norms_()
 {
+    std::cout << "Model constructor called" << std::endl;
     std::ifstream in;
     in.open(filename, std::ifstream::in);
     if (in.fail())
