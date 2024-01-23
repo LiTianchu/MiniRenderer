@@ -201,19 +201,13 @@ void draw_mesh_wireframe(HEModel model, TGAImage &image)
         int num = 0;
         do
         {
-            // std::cout << "face[" << i << "][" << j << "] = " << face[j] << std::endl;
             HEdge *prev_e = h_edge->prev;
             HEdge *next_e = h_edge->next;
-            //std::cout << ++num << std::endl;
-            // HEdge p = *prev;
-            // std::cout << "prev = " << prev << " v: " << prev->v << std::endl;
             Vertex *vertex_start = prev_e->v;
             Vertex *vertex_end = h_edge->v;
             Vec3 pos_start = vertex_start->pos;
             Vec3 pos_end = vertex_end->pos;
-
-            // std::cout << "vertex_start = " << vertex_start << std::endl;
-            // std::cout << "vertex_end = " << vertex_end << std::endl;
+            
 
             // map the world coordinates to image coordinates
             int x0 = (pos_start.x + 1.0) / 2.0 * image.get_width();
@@ -221,32 +215,10 @@ void draw_mesh_wireframe(HEModel model, TGAImage &image)
             int x1 = (pos_end.x + 1.0) / 2.0 * image.get_width();
             int y1 = (pos_end.y + 1.0) / 2.0 * image.get_height();
 
-            // std::cout << x0 << " " << y0 << " " << x1 << " " << y1 << std::endl;
             // draw the line
-            line(x0, y0, x1, y1, image, white);
+            line(x0, y0, x1, y1, image, h_edge->pair==NULL ? red : white);
             h_edge = h_edge->next;
         }while((h_edge != (*face)->h));
-        // std::vector<Vec3i> face = model.face(i); // obtain the triangle indices of the current face
-        // // foreach vertex of the current face, render a line from the current vertex to the next vertex
-        // for (int j = 0; j < 3; j++)
-        // {
-        //     // std::cout << "face[" << i << "][" << j << "] = " << face[j] << std::endl;
-        //     Vec3 vertex_start = model.vert(face[j].ivert);
-        //     Vec3 vertex_end = model.vert(face[(j + 1) % 3].ivert);
-
-        //     // std::cout << "vertex_start = " << vertex_start << std::endl;
-        //     // std::cout << "vertex_end = " << vertex_end << std::endl;
-
-        //     // map the world coordinates to image coordinates
-        //     int x0 = (vertex_start.x + 1.0) / 2.0 * image.get_width();
-        //     int y0 = (vertex_start.y + 1.0) / 2.0 * image.get_height();
-        //     int x1 = (vertex_end.x + 1.0) / 2.0 * image.get_width();
-        //     int y1 = (vertex_end.y + 1.0) / 2.0 * image.get_height();
-
-        //     // std::cout << x0 << " " << y0 << " " << x1 << " " << y1 << std::endl;
-        //     // draw the line
-        //     line(x0, y0, x1, y1, image, white);
-        // }
     }
 }
 

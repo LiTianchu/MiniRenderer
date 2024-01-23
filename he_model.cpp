@@ -72,10 +72,9 @@ HEModel::HEModel(const char *filename) : h_edges(), faces(), vertices()
                 std::pair pair = vertices.insert(v);
 
                 // if has duplicate value in the set, then reference v to that duplicate value
-                if (!pair.second) // it never enters this if statement
+                if (!pair.second)
                 {
-                    v = *pair.first;
-                    std::cout << "duplicate: " << (*pair.first) << "v: " << v << std::endl;
+                    v = *pair.first; // refer the v pointer to the already stored vertex
                 }
                 else
                 {
@@ -90,95 +89,64 @@ HEModel::HEModel(const char *filename) : h_edges(), faces(), vertices()
             triangles.push_back(tri);
         }
     }
+    int num_of_pairs_found;
+
     for (int i = 0; i < triangles.size(); i++)
     {
-        Face* f = new Face();
-        std::vector<HEdge *> h_edges_temp;
+        Face *f = new Face();              // initialize face
+        std::vector<HEdge *> h_edges_temp; // initialize a temorary vector of half edges
 
         for (int j = 0; j < triangles[i].size(); j++)
         {
-            HEdge *h_edge = new HEdge();
-            Vertex *v = triangles[i][j];
-            v->h = h_edge;
-            h_edge->v = v;
-            h_edge->f = f;
+            HEdge *h_edge = new HEdge(); // initialize a half edge
+            Vertex *v = triangles[i][j]; // retrieve the vertex
+            v->h = h_edge;               // set the vertex's half edge to the current half edge
+            h_edge->v = v;               // set the half edge's head vertex to the current vertex
+            h_edge->f = f;               // set the half edge's face to the current face
             h_edges_temp.push_back(h_edge);
         }
 
-        for (int j = 0; j < h_edges_temp.size(); j++)
+        for (int j = 0; j < h_edges_temp.size(); j++) // iterate throught the temp vector of half edges
         {
+            // get the previous and next half edges's index
             int prev_index = j - 1 < 0 ? h_edges_temp.size() - 1 : j - 1;
             int next_index = j + 1 >= h_edges_temp.size() ? 0 : j + 1;
 
-            h_edges_temp[j]->next = h_edges_temp[next_index];
-            h_edges_temp[j]->prev = h_edges_temp[prev_index];
-
+            h_edges_temp[j]->next = h_edges_temp[next_index]; // set the next half edge
+            h_edges_temp[j]->prev = h_edges_temp[prev_index]; // set the previous half edge
             for (int k = 0; k < h_edges.size(); k++)
             {
-                if (h_edges[k]->v == h_edges_temp[j]->prev->v && h_edges[k]->prev->v == h_edges_temp[j]->v)
+                if (h_edges[k]->v == h_edges_temp[j]->prev->v && // check if the edge match the opposite orientation condition
+                    h_edges[k]->prev->v == h_edges_temp[j]->v)
                 {
-                    h_edges_temp[j]->pair = h_edges[k];
-                    h_edges[k]->pair = h_edges_temp[j];
+                    num_of_pairs_found++;
+                    h_edges_temp[j]->pair = h_edges[k]; // set the pair of the current half edge
+                    h_edges[k]->pair = h_edges_temp[j]; // set the pair's pair to the current half edge
                     break;
                 }
             }
 
-            h_edges.push_back(h_edges_temp[j]);
+            h_edges.push_back(h_edges_temp[j]); // add the current half edge to the list of half edges
         }
 
-        f->h = h_edges_temp[0];
-        faces.push_back(f);
+        f->h = h_edges_temp[0]; // set the face's half edge to the first half edge
+        faces.push_back(f);     // add the face to the list of faces
     }
-
-    // Don't forget to clean up dynamically allocated memory (delete HEdges)
-
-    // return 0;
+    std::cout << "HEModel constructor finished" << std::endl;
+    std::cout << "h_edges size: " << h_edges.size() << std::endl;
+    std::cout << "pairs size: " << num_of_pairs_found << std::endl;
+    std::cout << "faces size: " << faces.size() << std::endl;
+    std::cout << "vertices size: " << vertices.size() << std::endl;
+    int num_of_edges_no_pair = 0;
+    for (std::vector<HEdge *>::iterator it = h_edges.begin(); it != h_edges.end(); ++it)
+    {
+        if ((*it)->pair == NULL)
+        {
+            num_of_edges_no_pair++;
+        }
+    }
+    std::cout << "num of edges with no pair: " << num_of_edges_no_pair << std::endl;
 }
-//     //save the triangles as half edge data structure
-//     for (int i = 0; i < triangles.size(); i++) //iterate through the triangles
-//     {
-//         Face f = Face();
-//         std::vector<HEdge> h_edges_temp = std::vector<HEdge>();
-//         for (int j = 0; j < triangles[i].size(); j++) //iterate through the vertices of the triangle
-//         {
-//             HEdge h_edge = HEdge();
-//             //get the vertex at head
-//             Vertex* v = triangles[i][j];
-//             v->h = &h_edge;
-//             h_edge.v = v;
-//             h_edge.f = &f;
-//             h_edges_temp.push_back(h_edge);
-//         }
-//         //std::cout << h_edges_temp.size() << std::endl;
-
-//         for(int j = 0; j < h_edges_temp.size(); j++){ //iterate through the half edges of the triangle
-//             int prev_index = j-1 < 0 ? h_edges_temp.size() - 1 :j - 1; //if j is 0, then prev_index is the last index
-//             int next_index = j+1 >= h_edges_temp.size() ? 0 : j + 1; //if j is the last index, then next_index is 0
-
-//             h_edges_temp[j].next = &h_edges_temp[next_index];
-//             h_edges_temp[j].prev = &h_edges_temp[prev_index];
-
-//             //try to find a pair of this edge in the vector
-//             //if found, then assign the pair to each other
-//             //if not found, then add this edge to the list
-//             for(int k = 0; k < h_edges.size(); k++){
-//                 if(h_edges[k]->v == h_edges_temp[j].prev->v && h_edges[k]->prev->v == h_edges_temp[j].v){
-//                     h_edges_temp[j].pair = h_edges[k];
-//                     h_edges[k]->pair = &h_edges_temp[j];
-//                     break;
-//                 }
-//             }
-//             h_edges.push_back(&h_edges_temp[j]);
-//         }
-
-//         //std::cout << &h_edges_temp[0] << std::endl;
-//         //std::cout << &f << std::endl;
-//         f.h = &h_edges_temp[0];
-//         faces.push_back(&f);
-//     }
-
-//     std::cout << "h_edges: " << h_edges.size() << " faces: " << faces.size() << " vertices: " <<vertices.size() << std::endl;
-// }
 
 HEModel::~HEModel()
 {

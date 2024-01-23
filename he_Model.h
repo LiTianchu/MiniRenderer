@@ -43,18 +43,18 @@ struct Vertex
 	inline bool operator>(const Vertex &v) const { return index > v.index; };
 };
 
-// class VertexCompare{
-// 	bool operator() (Vertex a, Vertex b) const {
-//         return false;
-//     }
-// };
+struct VertexCompare{
+	bool operator() (const Vertex* a, const Vertex* b) const {
+        return a->index < b->index;
+    }
+};
 
 class HEModel
 {
 private:
 	std::vector<HEdge*> h_edges;
 	std::vector<Face*> faces;
-	std::set<Vertex*> vertices;
+	std::set<Vertex*, VertexCompare> vertices;
 	
 public:
 	HEModel(const char *filename);
