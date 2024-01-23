@@ -195,7 +195,7 @@ Vec3f get_barycentric(Vec3f *pts, Vec2i P)
 void draw_mesh_wireframe(HEModel model, TGAImage &image)
 {
     // for each face in the model
-    for (std::vector<Face *>::iterator face = model.faces_begin(); face != model.faces_end(); ++face)
+    for (std::set<Face *>::iterator face = model.faces_begin(); face != model.faces_end(); ++face)
     {
         HEdge *h_edge = (*face)->h;
         int num = 0;

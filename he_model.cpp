@@ -3,7 +3,9 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <unordered_set>
 #include "he_model.h"
+#include <typeindex>
 
 HEModel::HEModel(const char *filename) : h_edges(), faces(), vertices()
 { // constructor definition
@@ -89,7 +91,19 @@ HEModel::HEModel(const char *filename) : h_edges(), faces(), vertices()
             triangles.push_back(tri);
         }
     }
-    int num_of_pairs_found;
+
+    int num_of_pairs_found = 0;
+
+    auto edge_hash = [](const Edge* a){
+        return std::hash<int>{}(a->v1->index) ^ std::hash<int>{}(a->v2->index);
+    };
+
+    auto edge_equal = [](const Edge* a, const Edge* b) {
+    // Compare edges based on their vertices, regardless of the order
+    return (a->v1 == b->v1 && a->v2 == b->v2) || (a->v1 == b->v2 && a->v2 == b->v1);
+    };
+
+    std::unordered_set<Edge*, decltype(edge_hash), decltype(edge_equal)> edges_temp(10,edge_hash,edge_equal);
 
     for (int i = 0; i < triangles.size(); i++)
     {
@@ -114,31 +128,53 @@ HEModel::HEModel(const char *filename) : h_edges(), faces(), vertices()
 
             h_edges_temp[j]->next = h_edges_temp[next_index]; // set the next half edge
             h_edges_temp[j]->prev = h_edges_temp[prev_index]; // set the previous half edge
-            for (int k = 0; k < h_edges.size(); k++)
-            {
-                if (h_edges[k]->v == h_edges_temp[j]->prev->v && // check if the edge match the opposite orientation condition
-                    h_edges[k]->prev->v == h_edges_temp[j]->v)
-                {
-                    num_of_pairs_found++;
-                    h_edges_temp[j]->pair = h_edges[k]; // set the pair of the current half edge
-                    h_edges[k]->pair = h_edges_temp[j]; // set the pair's pair to the current half edge
-                    break;
-                }
-            }
 
-            h_edges.push_back(h_edges_temp[j]); // add the current half edge to the list of half edges
+            Vertex *start_v = h_edges_temp[j]->prev->v;
+            Vertex *end_v = h_edges_temp[j]->v;
+
+            Edge *e = new Edge();
+            e->v1 = start_v;
+            e->v2 = end_v;
+            e->h = h_edges_temp[j];
+            //attempt to insert to undirected edge set
+            std::pair insert_result = edges_temp.insert(e);
+            if(!insert_result.second) //has duplicate
+            {
+                num_of_pairs_found++;
+                h_edges_temp[j]->pair = ((*insert_result.first)->h);
+                ((*insert_result.first)->h)->pair = h_edges_temp[j];
+            }
+           
+            h_edges_temp[j]->index = h_edges.size();
+            h_edges.insert(h_edges_temp[j]); // add the current half edge to the list of half edges
         }
 
         f->h = h_edges_temp[0]; // set the face's half edge to the first half edge
-        faces.push_back(f);     // add the face to the list of faces
+        f->index = faces.size();
+        faces.insert(f); // add the face to the list of faces
     }
+
+     // h_edges.insert(h_edges_temp[j]);
+
+            // for (auto it = h_edges.begin(); it != h_edges.end(); it++)
+            // {
+            //     if ((*it)->v == start_v && // check if the edge match the opposite orientation condition
+            //         (*it)->prev->v == end_v)
+            //     {
+            //         num_of_pairs_found++;
+            //         h_edges_temp[j]->pair = *it;   // set the pair of the current half edge
+            //         (*it)->pair = h_edges_temp[j]; // set the pair's pair to the current half edge
+            //         break;
+            //     }
+            // }
+
     std::cout << "HEModel constructor finished" << std::endl;
     std::cout << "h_edges size: " << h_edges.size() << std::endl;
     std::cout << "pairs size: " << num_of_pairs_found << std::endl;
     std::cout << "faces size: " << faces.size() << std::endl;
     std::cout << "vertices size: " << vertices.size() << std::endl;
     int num_of_edges_no_pair = 0;
-    for (std::vector<HEdge *>::iterator it = h_edges.begin(); it != h_edges.end(); ++it)
+    for (std::set<HEdge *>::iterator it = h_edges.begin(); it != h_edges.end(); ++it)
     {
         if ((*it)->pair == NULL)
         {
