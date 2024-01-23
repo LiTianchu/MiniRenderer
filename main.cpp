@@ -27,11 +27,11 @@ int main(int argc, char **argv)
     if (argc >= 2)
     {
         Model model_loaded = Model("obj/african_head.obj");
-        HEModel test_model = HEModel("obj/african_head.obj");
+        HEModel he_model_loaded = HEModel("obj/african_head.obj");
 
         if (std::string(argv[1]) == "wireframe")
         {
-            draw_mesh_wireframe(test_model, image);
+            draw_mesh_wireframe(he_model_loaded, image);
         }
         else if (std::string(argv[1]) == "flat")
         {
@@ -111,9 +111,9 @@ void triangle_linesweeping(Vec2i tv0, Vec2i tv1, Vec2i tv2, TGAImage &image, TGA
     }
 }
 
-void triangle_barycentric(Vec3f *pts, Vec2f *tex_coords, Vec3f *norms, TGAImage texture, 
-                                float *zbuffer, Vec3f light_dir, TGAImage &image, TGAColor color, 
-                                    bool shade_smooth)
+void triangle_barycentric(Vec3f *pts, Vec2f *tex_coords, Vec3f *norms, TGAImage texture,
+                          float *zbuffer, Vec3f light_dir, TGAImage &image, TGAColor color,
+                          bool shade_smooth)
 {
     // obtain the bounding box cooridnates
     int x_min = std::min(pts[0].x, std::min(pts[1].x, pts[2].x));
@@ -149,23 +149,26 @@ void triangle_barycentric(Vec3f *pts, Vec2f *tex_coords, Vec3f *norms, TGAImage 
                 { // has no texture shade using color
                     // std::cout << "Shading with color" << std::endl;
                     TGAColor shade_color;
-                    if(shade_smooth){
+                    if (shade_smooth)
+                    {
                         std::vector<float> I_at_vertices = {norms[0] * light_dir, norms[1] * light_dir, norms[2] * light_dir};
                         float interpolated_I = b_coord.x * I_at_vertices[0] + b_coord.y * I_at_vertices[1] + b_coord.z * I_at_vertices[2];
                         shade_color = TGAColor(color.r * interpolated_I, color.g * interpolated_I, color.b * interpolated_I, 255);
-                    }else{
+                    }
+                    else
+                    {
                         shade_color = color;
                     }
                     image.set(x, y, shade_color);
                 }
                 else
                 {
-                    //std::vector<float> I_at_vertices = {norms[0] * light_dir, norms[1] * light_dir, norms[2] * light_dir};
-                    //float interpolated_I = b_coord.x * I_at_vertices[0] + b_coord.y * I_at_vertices[1] + b_coord.z * I_at_vertices[2];
+                    // std::vector<float> I_at_vertices = {norms[0] * light_dir, norms[1] * light_dir, norms[2] * light_dir};
+                    // float interpolated_I = b_coord.x * I_at_vertices[0] + b_coord.y * I_at_vertices[1] + b_coord.z * I_at_vertices[2];
                     float interpolated_u = b_coord.x * tex_coords[0].u + b_coord.y * tex_coords[1].u + b_coord.z * tex_coords[2].u;
                     float interpolated_v = b_coord.x * tex_coords[0].v + b_coord.y * tex_coords[1].v + b_coord.z * tex_coords[2].v;
                     TGAColor base_color = texture.get(interpolated_u * texture.get_width(), interpolated_v * texture.get_height());
-                    //TGAColor shade_color = TGAColor(base_color.r * interpolated_I, base_color.g * interpolated_I, base_color.b * interpolated_I, 255);
+                    // TGAColor shade_color = TGAColor(base_color.r * interpolated_I, base_color.g * interpolated_I, base_color.b * interpolated_I, 255);
 
                     image.set(x, y, base_color);
                     // std::cout << "Shading with texture" << std::endl;
@@ -192,16 +195,19 @@ Vec3f get_barycentric(Vec3f *pts, Vec2i P)
 void draw_mesh_wireframe(HEModel model, TGAImage &image)
 {
     // for each face in the model
-    for (std::vector<Face*>::iterator face = model.faces_begin(); face!=model.faces_end();++face)
+    for (std::vector<Face *>::iterator face = model.faces_begin(); face != model.faces_end(); ++face)
     {
-        HEdge* h_edge = (*face)->h;
-        while(h_edge->next != (*face)->h){
+        HEdge *h_edge = (*face)->h;
+        int num = 0;
+        do
+        {
             // std::cout << "face[" << i << "][" << j << "] = " << face[j] << std::endl;
-            HEdge* prev = h_edge->prev;
-            HEdge* next = h_edge->next;
-            HEdge p = *prev;
-            std::cout << "prev = " << prev << " v: " << prev->v << std::endl;
-            Vertex *vertex_start = prev->v;
+            HEdge *prev_e = h_edge->prev;
+            HEdge *next_e = h_edge->next;
+            //std::cout << ++num << std::endl;
+            // HEdge p = *prev;
+            // std::cout << "prev = " << prev << " v: " << prev->v << std::endl;
+            Vertex *vertex_start = prev_e->v;
             Vertex *vertex_end = h_edge->v;
             Vec3 pos_start = vertex_start->pos;
             Vec3 pos_end = vertex_end->pos;
@@ -219,7 +225,7 @@ void draw_mesh_wireframe(HEModel model, TGAImage &image)
             // draw the line
             line(x0, y0, x1, y1, image, white);
             h_edge = h_edge->next;
-        }
+        }while((h_edge != (*face)->h));
         // std::vector<Vec3i> face = model.face(i); // obtain the triangle indices of the current face
         // // foreach vertex of the current face, render a line from the current vertex to the next vertex
         // for (int j = 0; j < 3; j++)
@@ -303,7 +309,7 @@ void draw_mesh_shaded(Model model, TGAImage texture, float *zbuffer, TGAImage &i
         Vec3f normal = (t_world[2] - t_world[0]).cross(t_world[1] - t_world[0]);
         normal.normalize();
 
-        float intensity = shade_smooth ? 1 : normal * light_dir; //if shade smooth is chosen, will compute the intensity in triangle rasterization stage
+        float intensity = shade_smooth ? 1 : normal * light_dir; // if shade smooth is chosen, will compute the intensity in triangle rasterization stage
 
         if (intensity > 0)
         {
