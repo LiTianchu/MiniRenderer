@@ -46,6 +46,8 @@ int main(int argc, char **argv)
             TGAImage texture = TGAImage();
             texture.read_tga_file("obj/african_head_diffuse.tga");
             draw_mesh_shaded(he_model_loaded, texture, zbuffer, image, Vec3f(0, 0, -1), false);
+        }else if(std::string(argv[1]) == "uv"){
+
         }
         else
         {
