@@ -26,7 +26,6 @@ int main(int argc, char **argv)
 
     if (argc >= 2)
     {
-        Model model_loaded = Model("obj/african_head.obj");
         HEModel he_model_loaded = HEModel("obj/african_head.obj");
 
         if (std::string(argv[1]) == "wireframe")
@@ -224,34 +223,6 @@ void draw_mesh_wireframe(HEModel model, TGAImage &image)
     }
 }
 
-void draw_mesh_wireframe(Model model, TGAImage &image)
-{
-    // for each face in the model
-    for (int i = 0; i < model.nfaces(); i++)
-    {
-        std::vector<Vec3i> face = model.face(i); // obtain the triangle indices of the current face
-        // foreach vertex of the current face, render a line from the current vertex to the next vertex
-        for (int j = 0; j < 3; j++)
-        {
-            // std::cout << "face[" << i << "][" << j << "] = " << face[j] << std::endl;
-            Vec3 vertex_start = model.vert(face[j].ivert);
-            Vec3 vertex_end = model.vert(face[(j + 1) % 3].ivert);
-
-            // std::cout << "vertex_start = " << vertex_start << std::endl;
-            // std::cout << "vertex_end = " << vertex_end << std::endl;
-
-            // map the world coordinates to image coordinates
-            int x0 = (vertex_start.x + 1.0) / 2.0 * image.get_width();
-            int y0 = (vertex_start.y + 1.0) / 2.0 * image.get_height();
-            int x1 = (vertex_end.x + 1.0) / 2.0 * image.get_width();
-            int y1 = (vertex_end.y + 1.0) / 2.0 * image.get_height();
-
-            // std::cout << x0 << " " << y0 << " " << x1 << " " << y1 << std::endl;
-            // draw the line
-            line(x0, y0, x1, y1, image, white);
-        }
-    }
-}
 
 void draw_mesh_shaded(HEModel model, TGAImage texture, float *zbuffer, TGAImage &image, Vec3f light_dir, bool shade_smooth)
 {
@@ -292,44 +263,6 @@ void draw_mesh_shaded(HEModel model, TGAImage texture, float *zbuffer, TGAImage 
     }
 }
 
-void draw_mesh_shaded(Model model, TGAImage texture, float *zbuffer, TGAImage &image, Vec3f light_dir, bool shade_smooth)
-{
-    // for each face in the model
-
-    for (int i = 0; i < model.nfaces(); i++)
-    {
-        std::vector<Vec3i> face = model.face(i); // obtain the triangle indices of the current face
-
-        Vec3f t_screen[3];
-        Vec3f t_world[3];
-        Vec2f t_uv[3];
-        Vec3f t_norm[3];
-        // foreach vertex of the current face, render a line from the current vertex to the next vertex
-        for (int j = 0; j < 3; j++)
-        {
-            Vec3 vertex_world = model.vert(face[j].ivert);
-            Vec2f uv = model.uv(face[j].iuv);
-            Vec3f norm = model.norm(face[j].inorm);
-            // map the world coordinates to image coordinates
-            int x_screen = (vertex_world.x + 1.0) / 2.0 * image.get_width();
-            int y_screen = (vertex_world.y + 1.0) / 2.0 * image.get_height();
-            t_world[j] = vertex_world;
-            t_screen[j] = Vec3f(x_screen, y_screen, (vertex_world.z + 1.0) / 2.0);
-            t_uv[j] = uv;
-            t_norm[j] = norm * -1;
-        }
-        // compute normal
-        Vec3f normal = (t_world[2] - t_world[0]).cross(t_world[1] - t_world[0]);
-        normal.normalize();
-
-        float intensity = shade_smooth ? 1 : normal * light_dir; // if shade smooth is chosen, will compute the intensity in triangle rasterization stage
-
-        if (intensity > 0)
-        {
-            triangle_barycentric(t_screen, t_uv, t_norm, texture, zbuffer, light_dir, image, TGAColor(255 * intensity, 255 * intensity, 255 * intensity, 255), shade_smooth);
-        }
-    }
-}
 
 // Bresenham's line drawing algorithm
 void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color)
