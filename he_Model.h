@@ -47,9 +47,13 @@ struct Vertex
 {
 	HEdge *h; // one of the half-edges points to this vertex
 	int index;
-	Vec3f pos;
+	Vec3f pos; //model space position
 	Vec3f norm;
 	Vec2f tex_coord;
+	Vec3f pos_view; //view space position
+	Vec3f pos_proj; //projection space position
+	Vec2f pos_screen; //screen space position
+	float screen_z; //screen space z value
 	Vertex() : h(), pos(), norm(), tex_coord() {}
 	Vertex(HEdge *_h, Vec3f _pos, Vec3f _norm, Vec2f _tex_coord) : h(_h), pos(_pos), norm(_norm), tex_coord(_tex_coord) {}
 	inline bool operator<(const Vertex &v) const { return index < v.index; };

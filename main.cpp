@@ -2,6 +2,11 @@
 #include "tgaimage.h"
 #include "model.h"
 #include "he_model.h"
+#include "shaders/shader.h"
+#include "shaders/flat_shader.cpp"
+#include "shaders/gouraud_shader.cpp"
+#include "shaders/uv_shader.cpp"
+#include "shaders/diffuse_map_shader.cpp"
 
 const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red = TGAColor(255, 0, 0, 255);
@@ -10,13 +15,11 @@ const TGAColor blue = TGAColor(0, 0, 255, 255);
 
 void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color);
 void draw_mesh_wireframe(HEModel model, TGAImage &image);
-void draw_mesh_wireframe(Model model, TGAImage &image);
-void draw_mesh_shaded(HEModel model, TGAImage texture, float *zbuffer, TGAImage &image, Vec3f light_dir, bool shade_smooth);
-void draw_mesh_shaded(Model model, TGAImage texture, float *zbuffer, TGAImage &image, Vec3f light_dir, bool shade_smooth);
+void render_model(HEModel model, TGAImage texture, Shader *shader, float *zbuffer, TGAImage &image, Vec3f light_dir, bool shade_smooth);
 void triangle_linesweeping(Vec2i tv0, Vec2i tv1, Vec2i tv2, TGAImage &image, TGAColor color);
 void sort_triangle_vertices(Vec2i (&t)[]);
-Vec3f get_barycentric(Vec3f *pts, Vec2i P);
-void triangle_barycentric(Vec3f *pts, Vec2f *tex_coords, Vec3f *norms, TGAImage texture, float *zbuffer, Vec3f light_dir, TGAImage &image, TGAColor color, bool shade_smooth);
+Vec3f get_barycentric(Vec2f *pts, Vec2i P);
+void triangle_barycentric(std::vector<Vertex> vertices, Shader *shader, Vec3f face_normal, TGAImage texture, float *zbuffer, Vec3f light_dir, TGAImage &image, TGAColor color, bool shade_smooth);
 
 int main(int argc, char **argv)
 {
@@ -34,19 +37,21 @@ int main(int argc, char **argv)
         }
         else if (std::string(argv[1]) == "flat")
         {
-            draw_mesh_shaded(he_model_loaded, TGAImage(), zbuffer, image, Vec3f(0, 0, -1), false);
+            render_model(he_model_loaded, TGAImage(), new Flat_Shader(), zbuffer, image, Vec3f(0, 0, -1), false);
         }
         else if (std::string(argv[1]) == "smooth")
         {
-            draw_mesh_shaded(he_model_loaded, TGAImage(), zbuffer, image, Vec3f(0, 0, -1), true);
+            render_model(he_model_loaded, TGAImage(), new Gouraud_Shader(), zbuffer, image, Vec3f(0, 0, -1), true);
         }
         else if (std::string(argv[1]) == "texture")
         {
             TGAImage texture = TGAImage();
             texture.read_tga_file("obj/african_head_diffuse.tga");
-            draw_mesh_shaded(he_model_loaded, texture, zbuffer, image, Vec3f(0, 0, -1), false);
-        }else if(std::string(argv[1]) == "uv"){
-
+            render_model(he_model_loaded, texture, new Diffuse_Map_Shader(), zbuffer, image, Vec3f(0, 0, -1), false);
+        }
+        else if (std::string(argv[1]) == "uv")
+        {
+            render_model(he_model_loaded, TGAImage(), new UV_Shader(), zbuffer, image, Vec3f(0, 0, -1), true);
         }
         else
         {
@@ -112,22 +117,32 @@ void triangle_linesweeping(Vec2i tv0, Vec2i tv1, Vec2i tv2, TGAImage &image, TGA
     }
 }
 
-void triangle_barycentric(Vec3f *pts, Vec2f *tex_coords, Vec3f *norms, TGAImage texture,
+void triangle_barycentric(std::vector<Vertex> vertices, Shader *shader, TGAImage texture,
                           float *zbuffer, Vec3f light_dir, TGAImage &image, TGAColor color,
                           bool shade_smooth)
 {
+    // compute face normal
+    Vec3f face_normal = (vertices[2].pos - vertices[0].pos).cross(vertices[1].pos - vertices[0].pos);
+    face_normal.normalize();
+
+    //  extract the vertex data
+    Vec2f pts[] = {vertices[0].pos_screen, vertices[1].pos_screen, vertices[2].pos_screen};
+    float z_indices[] = {vertices[0].screen_z, vertices[1].screen_z, vertices[2].screen_z};
+    Vec3f norms[] = {vertices[0].norm, vertices[1].norm, vertices[2].norm};
+    Vec2f tex_coords[] = {vertices[0].tex_coord, vertices[1].tex_coord, vertices[2].tex_coord};
+
     // obtain the bounding box cooridnates
     int x_min = std::min(pts[0].x, std::min(pts[1].x, pts[2].x));
     int x_max = std::max(pts[0].x, std::max(pts[1].x, pts[2].x));
     int y_min = std::min(pts[0].y, std::min(pts[1].y, pts[2].y));
     int y_max = std::max(pts[0].y, std::max(pts[1].y, pts[2].y));
-    // std::cout << pts[0].x <<" " << pts[0].y << " " << pts[0].z << " " <<tex_coords[0].u << " " << tex_coords[0].v << std::endl;
+
     //  clamp the coordinates to prevent exceeding the boundary
     x_min = std::max(0, x_min);
     x_max = std::min(image.get_width() - 1, x_max);
     y_min = std::max(0, y_min);
     y_max = std::min(image.get_height() - 1, y_max);
-    // std::cout << "x_min = " << x_min << " x_max = " << x_max << " y_min = " << y_min << " y_max = " << y_max << std::endl;
+
     //  foreach pixel in bounding box, put pixel if it is inside triangle
     for (int x = x_min; x <= x_max; x++)
     {
@@ -140,21 +155,24 @@ void triangle_barycentric(Vec3f *pts, Vec2f *tex_coords, Vec3f *norms, TGAImage 
                 continue;                                        // skip if it is outside of triangle
 
             // calculate the z value
-            float interpolated_z = b_coord.x * pts[0].z + b_coord.y * pts[1].z + b_coord.z * pts[2].z;
+            float interpolated_z = b_coord.x * z_indices[0] + b_coord.y * z_indices[1] + b_coord.z * z_indices[2];
 
             int zbuffer_index = x + y * image.get_width();
-            if (interpolated_z > zbuffer[zbuffer_index])
+            if (interpolated_z > zbuffer[zbuffer_index]) // if pass z test, start shading the pixel
             {
-                zbuffer[zbuffer_index] = interpolated_z;
+                zbuffer[zbuffer_index] = interpolated_z; // update z buffer
+                Fragment_Shader_Payload frag_data = Fragment_Shader_Payload(0, Vec3f(0, 0, 0), Vec3f(0, 0, 0), Vec2f(0, 0), color.to_vec3(), &texture);
                 if (texture.get_width() == 0)
                 { // has no texture shade using color
-                    // std::cout << "Shading with color" << std::endl;
                     TGAColor shade_color;
                     if (shade_smooth)
                     {
+                        
                         std::vector<float> I_at_vertices = {norms[0] * light_dir, norms[1] * light_dir, norms[2] * light_dir};
                         float interpolated_I = b_coord.x * I_at_vertices[0] + b_coord.y * I_at_vertices[1] + b_coord.z * I_at_vertices[2];
-                        shade_color = TGAColor(color.r * interpolated_I, color.g * interpolated_I, color.b * interpolated_I, 255);
+                        frag_data.light_intensity = interpolated_I;
+                        Vec3i color_vector = shader->fragment_shader(frag_data);
+                        shade_color = TGAColor(color_vector);
                     }
                     else
                     {
@@ -164,22 +182,17 @@ void triangle_barycentric(Vec3f *pts, Vec2f *tex_coords, Vec3f *norms, TGAImage 
                 }
                 else
                 {
-                    // std::vector<float> I_at_vertices = {norms[0] * light_dir, norms[1] * light_dir, norms[2] * light_dir};
-                    // float interpolated_I = b_coord.x * I_at_vertices[0] + b_coord.y * I_at_vertices[1] + b_coord.z * I_at_vertices[2];
                     float interpolated_u = b_coord.x * tex_coords[0].u + b_coord.y * tex_coords[1].u + b_coord.z * tex_coords[2].u;
                     float interpolated_v = b_coord.x * tex_coords[0].v + b_coord.y * tex_coords[1].v + b_coord.z * tex_coords[2].v;
-                    TGAColor base_color = texture.get(interpolated_u * (texture.get_width()-1), (1.0-interpolated_v) * (texture.get_height()-1));
-                    // TGAColor shade_color = TGAColor(base_color.r * interpolated_I, base_color.g * interpolated_I, base_color.b * interpolated_I, 255);
-
+                    TGAColor base_color = texture.get(interpolated_u * (texture.get_width() - 1), (1.0 - interpolated_v) * (texture.get_height() - 1));
                     image.set(x, y, base_color);
-                    // std::cout << "Shading with texture" << std::endl;
                 }
             }
         }
     }
 }
 
-Vec3f get_barycentric(Vec3f *pts, Vec2i P)
+Vec3f get_barycentric(Vec2f *pts, Vec2i P)
 {
     //(ABx ACx PAx) X (ABy ACy PAy)
     Vec3f cross_product = Vec3f(pts[1].x - pts[0].x, pts[2].x - pts[0].x, pts[0].x - P.x).cross(Vec3f(pts[1].y - pts[0].y, pts[2].y - pts[0].y, pts[0].y - P.y)); // obtain (u*z, v*z, 1*z)
@@ -208,7 +221,6 @@ void draw_mesh_wireframe(HEModel model, TGAImage &image)
             Vertex *vertex_end = h_edge->v;
             Vec3 pos_start = vertex_start->pos;
             Vec3 pos_end = vertex_end->pos;
-            
 
             // map the world coordinates to image coordinates
             int x0 = (pos_start.x + 1.0) / 2.0 * image.get_width();
@@ -217,52 +229,51 @@ void draw_mesh_wireframe(HEModel model, TGAImage &image)
             int y1 = (pos_end.y + 1.0) / 2.0 * image.get_height();
 
             // draw the line
-            line(x0, y0, x1, y1, image, h_edge->pair==NULL ? red : white);
+            line(x0, y0, x1, y1, image, h_edge->pair == NULL ? red : white);
             h_edge = h_edge->next;
-        }while((h_edge != (*face)->h));
+        } while ((h_edge != (*face)->h));
     }
 }
 
-
-void draw_mesh_shaded(HEModel model, TGAImage texture, float *zbuffer, TGAImage &image, Vec3f light_dir, bool shade_smooth)
+void render_model(HEModel model, TGAImage texture, Shader *shader, float *zbuffer, TGAImage &image, Vec3f light_dir, bool shade_smooth)
 {
     // for each face in the model
-    for (std::set<Face*>::iterator face_itr = model.faces_begin();face_itr!=model.faces_end();++face_itr)
+    for (std::set<Face *>::iterator face_itr = model.faces_begin(); face_itr != model.faces_end(); ++face_itr)
     {
-        HEdge* h_edge = (*face_itr)->h; // obtain the triangle indices of the current face
-        Vec3f t_screen[3];
-        Vec3f t_world[3];
-        Vec2f t_uv[3];
-        Vec3f t_norm[3];
-        int j=0;
+        HEdge *h_edge = (*face_itr)->h; // optain the first half edge of the face
+        // initialize the arrays to store vertex data
+        std::vector<Vec3f> screen_coords;
+        // Vec3f t_world[3];
+        // Vec2f t_uv[3];
+        // Vec3f t_norm[3];
+        std::vector<Vertex> vertices;
+        int j = 0;
         // foreach vertex of the current face, render a line from the current vertex to the next vertex
-        do{
-            Vec3 pos_world = h_edge->v->pos;
-            Vec2f uv = h_edge->v->tex_coord;
-            Vec3f norm = h_edge->v->norm;
-            int x_screen = (pos_world.x + 1.0) / 2.0 * image.get_width();
-            int y_screen = (pos_world.y + 1.0) / 2.0 * image.get_height();
-            t_world[j] = pos_world;
-            t_screen[j] = Vec3f(x_screen, y_screen, (pos_world.z + 1.0) / 2.0);
-            t_uv[j] = uv;
-            t_norm[j] = norm * -1;
+        do
+        {
+            Vertex curr_vertex = shader->vertex_shader(*(h_edge->v));
+
+            // map the model coordinates to image coordinates
+            int x_screen = (curr_vertex.pos.x + 1.0) / 2.0 * image.get_width();
+            int y_screen = (curr_vertex.pos.y + 1.0) / 2.0 * image.get_height();
+            float z_index = (curr_vertex.pos.z + 1.0) / 2.0;
+            curr_vertex.pos_screen = Vec2f(x_screen, y_screen);
+            curr_vertex.screen_z = z_index;
+            vertices.push_back(curr_vertex);
             h_edge = h_edge->next;
             j++;
-        }while(h_edge != (*face_itr)->h);
+        } while (h_edge != (*face_itr)->h);
 
-        // compute normal
-        Vec3f normal = (t_world[2] - t_world[0]).cross(t_world[1] - t_world[0]);
-        normal.normalize();
+        
 
-        float intensity = shade_smooth ? 1 : normal * light_dir; // if shade smooth is chosen, will compute the intensity in triangle rasterization stage
+        //float intensity = shade_smooth ? 1 : face_normal * light_dir; // if shade smooth is chosen, will compute the intensity in triangle rasterization stage
 
-        if (intensity > 0)
-        {
-            triangle_barycentric(t_screen, t_uv, t_norm, texture, zbuffer, light_dir, image, TGAColor(255 * intensity, 255 * intensity, 255 * intensity, 255), shade_smooth);
-        }
+        //if (intensity > 0)
+        //{
+            triangle_barycentric(vertices, shader, texture, zbuffer, light_dir, image, TGAColor(255, 255, 255, 255), shade_smooth);
+        //}
     }
 }
-
 
 // Bresenham's line drawing algorithm
 void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color)
