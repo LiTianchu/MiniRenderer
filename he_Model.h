@@ -101,6 +101,10 @@ public:
 	std::set<Face *>::iterator faces_end() { return faces.end(); }
 	std::set<Vertex *>::iterator vertices_begin() { return vertices.begin(); }
 	std::set<Vertex *>::iterator vertices_end() { return vertices.end(); }
+	int num_of_h_edges() { return h_edges.size(); }
+	int num_of_faces() { return faces.size(); }
+	int num_of_vertices() { return vertices.size(); }
+	
 };
 
 #endif

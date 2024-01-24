@@ -86,8 +86,6 @@ void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color)
             error2 -= dx * 2;
         }
     }
-
-    
 }
 
 void triangle_linesweeping(Vec2i tv0, Vec2i tv1, Vec2i tv2, TGAImage &image, TGAColor color)
@@ -137,8 +135,8 @@ Vec3f get_barycentric(Vec2f *pts, Vec2i P)
 }
 
 void rasterize_triangle(std::vector<Vertex> vertices, Shader *shader, TGAImage texture,
-                          float *zbuffer, Vec3f light_dir, TGAImage &image, TGAColor color,
-                          Mode mode)
+                        float *zbuffer, Vec3f light_dir, TGAImage &image, TGAColor color,
+                        Mode mode)
 {
     // compute face normal
     Vec3f face_normal = (vertices[2].pos - vertices[0].pos).cross(vertices[1].pos - vertices[0].pos);
@@ -208,7 +206,7 @@ void rasterize_triangle(std::vector<Vertex> vertices, Shader *shader, TGAImage t
 
 void draw_mesh_wireframe(HEModel model, TGAImage &image)
 {
-    //for each face in the model
+    // for each face in the model
     for (std::set<Face *>::iterator face = model.faces_begin(); face != model.faces_end(); ++face)
     {
         HEdge *h_edge = (*face)->h;
@@ -227,14 +225,65 @@ void draw_mesh_wireframe(HEModel model, TGAImage &image)
             int y0 = (pos_start.y + 1.0) / 2.0 * image.get_height();
             int x1 = (pos_end.x + 1.0) / 2.0 * image.get_width();
             int y1 = (pos_end.y + 1.0) / 2.0 * image.get_height();
-            
+
             // draw the line
             line(x0, y0, x1, y1, image, h_edge->pair == NULL ? red : white);
-            
+
             h_edge = h_edge->next;
         } while ((h_edge != (*face)->h));
     }
 }
+
+void wireframe_dfs(Face& f, bool (&faces_visited)[], TGAImage& image)
+{
+    if (faces_visited[f.index])
+    {
+        return;
+    }
+    //draw the face
+    HEdge *h_edge = f.h;
+    std::cout << "drawing face with index: " << f.index << std::endl;
+    std::vector<Face> neighbor_faces;
+    do
+    {
+        HEdge *prev_e = h_edge->prev;
+        HEdge *next_e = h_edge->next;
+        Vertex *vertex_start = prev_e->v;
+        Vertex *vertex_end = h_edge->v;
+        Vec3 pos_start = vertex_start->pos;
+        Vec3 pos_end = vertex_end->pos;
+        
+        HEdge *pair = h_edge->pair;
+        if (pair != NULL)
+        {
+            Face neighbor_face = *pair->f;
+            neighbor_faces.push_back(neighbor_face);
+        }
+        // map the world coordinates to image coordinates
+        int x0 = (pos_start.x + 1.0) / 2.0 * image.get_width();
+        int y0 = (pos_start.y + 1.0) / 2.0 * image.get_height();
+        int x1 = (pos_end.x + 1.0) / 2.0 * image.get_width();
+        int y1 = (pos_end.y + 1.0) / 2.0 * image.get_height();
+        
+        line(x0, y0, x1, y1, image, h_edge->pair == NULL ? red : white);
+        h_edge = h_edge->next;
+    } while (h_edge != f.h);
+
+    faces_visited[f.index] = true;
+
+    for(Face& n : neighbor_faces)
+    {
+        wireframe_dfs(n, faces_visited, image);
+    }
+    
+}
+
+void draw_mesh_wireframe_dfs(HEModel model, TGAImage &image)
+{
+    bool faces_visited[model.num_of_faces()] = {false};
+    wireframe_dfs(**model.faces_begin(), faces_visited, image);
+}
+
 
 void render_model(HEModel model, TGAImage texture, Shader *shader, float *zbuffer, TGAImage &image, Vec3f light_dir, Mode mode)
 {
@@ -274,11 +323,11 @@ int main(int argc, char **argv)
 
     if (argc >= 2)
     {
-        HEModel he_model_loaded = HEModel("obj/african_head.obj");
-
+        HEModel he_model_loaded = HEModel("obj/diablo3_pose/diablo3_pose.obj");
+        //HEModel he_model_loaded = HEModel("obj/cube.obj");
         if (std::string(argv[1]) == "wireframe")
         {
-            draw_mesh_wireframe(he_model_loaded, image);
+            draw_mesh_wireframe_dfs(he_model_loaded, image);
         }
         else if (std::string(argv[1]) == "flat")
         {
@@ -291,7 +340,7 @@ int main(int argc, char **argv)
         else if (std::string(argv[1]) == "texture")
         {
             TGAImage texture = TGAImage();
-            texture.read_tga_file("obj/african_head_diffuse.tga");
+            texture.read_tga_file("obj/diablo3_pose/diablo3_pose_diffuse.tga");
             render_model(he_model_loaded, texture, new Diffuse_Map_Shader(), zbuffer, image, Vec3f(0, 0, -1), Mode::TEXTURE);
         }
         else if (std::string(argv[1]) == "uv")
