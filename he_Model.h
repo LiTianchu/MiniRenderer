@@ -47,6 +47,7 @@ struct Vertex
 {
 	HEdge *h; // one of the half-edges points to this vertex
 	int index;
+	int uv_index;
 	Vec3f pos; //model space position
 	Vec3f norm;
 	Vec2f tex_coord;
@@ -104,7 +105,7 @@ public:
 	int num_of_h_edges() { return h_edges.size(); }
 	int num_of_faces() { return faces.size(); }
 	int num_of_vertices() { return vertices.size(); }
-	
+
 };
 
 #endif

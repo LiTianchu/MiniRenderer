@@ -22,9 +22,10 @@ HEModel::HEModel(const char *filename) : h_edges(), faces(), vertices()
     std::vector<Vec3f> pos_list;
     std::vector<Vec3f> norm_list;
     std::vector<Vec2f> tex_coord_list;
-    int p_count;
-    int n_count;
-    int tc_count;
+    int p_count=0;
+    int n_count=0;
+    int tc_count=0;
+    int diff_uv_count = 0;
     std::vector<std::vector<Vertex *>> triangles;
     while (!in.eof())
     {
@@ -71,12 +72,19 @@ HEModel::HEModel(const char *filename) : h_edges(), faces(), vertices()
 
                 Vertex *v = new Vertex(); // create the vertex object
                 v->index = ipos;
+                v->uv_index = itc;
 
                 std::pair pair = vertices.insert(v);
 
                 // if has duplicate value in the set, then reference v to that duplicate value
                 if (!pair.second)
                 {
+                    if(v->uv_index != (*pair.first)->uv_index)
+                    {
+                        
+                        diff_uv_count++;
+                        std::cout << "vertex " << v->index << " with uv: " << v->uv_index << " has same index but diff uv with " <<  (*pair.first)->uv_index << std::endl;
+                    }
                     v = *pair.first; // refer the v pointer to the already stored vertex
                 }
                 else

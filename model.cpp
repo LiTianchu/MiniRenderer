@@ -55,7 +55,6 @@ Model::Model(const char *filename) : verts_(), faces_(), uv_(), norms_()
                 iuv--;
                 inorm--;
                 f.push_back(Vec3i(idx, iuv, inorm));
-                //std::cout << idx << " " << iuv << " " << inorm << std::endl;
             }
             faces_.push_back(f);
         }

@@ -40,7 +40,7 @@ void sort_triangle_vertices(Vec2i (&t)[])
 }
 
 // Bresenham's line drawing algorithm
-void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color)
+void draw_line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color)
 {
     bool steep = false;
     /*if y is greator than x, the line drawn will have gaps,
@@ -102,7 +102,7 @@ void triangle_linesweeping(Vec2i tv0, Vec2i tv1, Vec2i tv2, TGAImage &image, TGA
         int x1 = tv0.x + (tv2.x - tv0.x) * alpha;
         int x2 = tv0.x + (tv1.x - tv0.x) * beta;
 
-        line(x1, y, x2, y, image, color);
+        draw_line(x1, y, x2, y, image, color);
     }
 
     // rasterize the lowerhalf
@@ -116,7 +116,7 @@ void triangle_linesweeping(Vec2i tv0, Vec2i tv1, Vec2i tv2, TGAImage &image, TGA
         int x1 = tv0.x + (tv2.x - tv0.x) * alpha;
         int x2 = tv1.x + (tv2.x - tv1.x) * beta;
 
-        line(x1, y, x2, y, image, color);
+        draw_line(x1, y, x2, y, image, color);
     }
 }
 
@@ -227,7 +227,7 @@ void draw_mesh_wireframe(HEModel model, TGAImage &image)
             int y1 = (pos_end.y + 1.0) / 2.0 * image.get_height();
 
             // draw the line
-            line(x0, y0, x1, y1, image, h_edge->pair == NULL ? red : white);
+            draw_line(x0, y0, x1, y1, image, h_edge->pair == NULL ? red : white);
 
             h_edge = h_edge->next;
         } while ((h_edge != (*face)->h));
@@ -265,7 +265,7 @@ void wireframe_dfs(Face& f, bool (&faces_visited)[], TGAImage& image)
         int x1 = (pos_end.x + 1.0) / 2.0 * image.get_width();
         int y1 = (pos_end.y + 1.0) / 2.0 * image.get_height();
         
-        line(x0, y0, x1, y1, image, h_edge->pair == NULL ? red : white);
+        draw_line(x0, y0, x1, y1, image, h_edge->pair == NULL ? red : white);
         h_edge = h_edge->next;
     } while (h_edge != f.h);
 
