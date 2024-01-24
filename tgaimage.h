@@ -36,7 +36,7 @@ struct TGAColor {
 	TGAColor() : val(0), bytespp(1) {
 	}
 
-	TGAColor(Vec3i color) : b(color.x), g(color.y), r(color.z), a(255), bytespp(4) {
+	TGAColor(Vec3i color) : r(color.x), g(color.y), b(color.z), a(255), bytespp(4) {
 	}
 
 	TGAColor(unsigned char R, unsigned char G, unsigned char B, unsigned char A) : b(B), g(G), r(R), a(A), bytespp(4) {

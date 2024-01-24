@@ -11,7 +11,12 @@ class Diffuse_Map_Shader : public Shader{
     }
 
     Vec3i fragment_shader(const Fragment_Shader_Payload& frag_data){
-        return Vec3i(0,0, 0);
+        TGAColor tex_color = frag_data.texture->get(frag_data.texture->get_width()*frag_data.tex_coord.u, 
+                                                        frag_data.texture->get_height()*(1.0-frag_data.tex_coord.v));
+                                             
+        return Vec3i(tex_color.r, 
+                    tex_color.g, 
+                    tex_color.b);
     }
     
 };

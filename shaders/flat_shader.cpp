@@ -11,7 +11,7 @@ class Flat_Shader : public Shader{
     }
 
     virtual Vec3i fragment_shader(const Fragment_Shader_Payload& frag_data){
-        return Vec3i(0,0, 0);
+        return frag_data.base_color;
     }
     
 };

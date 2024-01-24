@@ -11,7 +11,9 @@ class UV_Shader : public Shader{
     }
 
     Vec3i fragment_shader(const Fragment_Shader_Payload& frag_data){
-        return Vec3i(0,0, 0);
+        return Vec3i(frag_data.tex_coord.u*255, 
+                    frag_data.tex_coord.v*255, 
+                    0);
     }
     
 };
