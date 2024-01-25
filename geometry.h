@@ -67,6 +67,7 @@ struct Vec3
 		*this = (*this) * (l / norm());
 		return *this;
 	}
+	Vec3<t> get_inverted() const { return Vec3<t>(-x, -y, -z); }
 	template <class>
 	friend std::ostream &operator<<(std::ostream &s, Vec3<t> &v);
 };

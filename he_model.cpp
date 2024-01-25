@@ -57,7 +57,8 @@ HEModel::HEModel(const char *filename) : h_edges(), faces(), vertices()
             iss >> norm.x;
             iss >> norm.y;
             iss >> norm.z;
-            norm_list.push_back(norm);
+            
+            norm_list.push_back(norm.get_inverted());
         }
         else if (!line.compare(0, 2, "f "))
         {
@@ -71,9 +72,11 @@ HEModel::HEModel(const char *filename) : h_edges(), faces(), vertices()
                 --inorm;
 
                 Vertex *v = new Vertex(); // create the vertex object
-                v->pos_index = ipos;
+
+                v->pos_index = ipos; //store the index for comparison
                 v->uv_index = itc;
-                v->pos = pos_list[ipos];
+
+                v->pos = pos_list[ipos]; //store the data
                 v->tex_coord = tex_coord_list[itc];
                 v->norm = norm_list[inorm];
 
@@ -93,12 +96,12 @@ HEModel::HEModel(const char *filename) : h_edges(), faces(), vertices()
 
     int num_of_pairs_found = 0;
 
-    //lambda for hashing of edges
+    //lambda for hashing of edges using the vertices' position index
     auto edge_hash = [](const Edge* a){
         return std::hash<int>{}(a->v1->pos_index) ^ std::hash<int>{}(a->v2->pos_index);
     };
 
-    //lambda for equality of edges
+    //lambda for equality of edges using the vertices' positionindex
     auto edge_equal = [](const Edge* a, const Edge* b) {
     // Compare edges based on their vertices, regardless of the order
     return (a->v1->pos_index == b->v1->pos_index && a->v2->pos_index == b->v2->pos_index) || 
@@ -165,7 +168,7 @@ HEModel::HEModel(const char *filename) : h_edges(), faces(), vertices()
     std::cout << "\th_edges size: " << h_edges.size() << std::endl;
     std::cout << "\tpairs size: " << num_of_pairs_found << std::endl;
     std::cout << "\tfaces size: " << faces.size() << std::endl;
-    std::cout << "\tvertices size: " << vertices.size() << std::endl;
+    std::cout << "\tunique vertices size: " << vertices.size() << std::endl;
     int num_of_edges_no_pair = 0;
     int num_of_vertices_no_norm = 0;
     int num_of_vertices_no_uv = 0;
@@ -189,11 +192,13 @@ HEModel::HEModel(const char *filename) : h_edges(), faces(), vertices()
         }
     }
     std::cout << "\tnum of edges with no pair: " << num_of_edges_no_pair << std::endl;
-    std::cout << "\tnum of vertices with no pos data: " << num_of_vertices_no_pos << std::endl;
-    std::cout << "\tnum of vertices with no uv data: " << num_of_vertices_no_uv << std::endl;
-    std::cout << "\tnum of vertices with no normal data: " << num_of_vertices_no_norm << std::endl;
 }
 
+void qem_simplify(){
+    //implement mesh simplification using quadric error metrics
+    
+
+}
 HEModel::~HEModel()
 {
 }

@@ -59,9 +59,7 @@ struct Vertex
 	int uv_index;
 	Vertex() : h(), pos(), norm(), tex_coord() {}
 	Vertex(HEdge *_h, Vec3f _pos, Vec3f _norm, Vec2f _tex_coord) : h(_h), pos(_pos), norm(_norm), tex_coord(_tex_coord) {}
-	// inline bool operator<(const Vertex &v) const { return index < v.index; };
-	// inline bool operator==(const Vertex &v) const { return index == v.index; };
-	// inline bool operator>(const Vertex &v) const { return index > v.index; };
+	//uniqueness of vertices are determined by the position and uv, as one vertex can have diff uv on diff faces
 	inline bool operator<(const Vertex &v) const {
         return (pos_index< v.pos_index) || ((pos_index == v.pos_index) && (uv_index < v.uv_index));
     }
@@ -95,6 +93,7 @@ struct Vertex_Compare
 {
 	bool operator()(const Vertex *a, const Vertex *b) const
 	{
+		//it will equal when the position index and uv index are the same
 		return a->pos_index < b->pos_index || (a->pos_index == b->pos_index && a->uv_index < b->uv_index);
 	}
 };
@@ -109,6 +108,7 @@ private:
 public:
 	HEModel(const char *filename);
 	~HEModel();
+	void qem_simplify();
 	std::set<HEdge *>::iterator h_edges_begin() { return h_edges.begin(); }
 	std::set<HEdge *>::iterator h_edges_end() { return h_edges.end(); }
 	std::set<Face *>::iterator faces_begin() { return faces.begin(); }

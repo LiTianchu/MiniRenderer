@@ -242,7 +242,7 @@ void wireframe_dfs(Face& f, bool (&faces_visited)[], TGAImage& image)
     }
     //draw the face
     HEdge *h_edge = f.h;
-    std::cout << "drawing face with index: " << f.index << std::endl;
+    //std::cout << "drawing face with index: " << f.index << std::endl;
     std::vector<Face> neighbor_faces;
     do
     {
