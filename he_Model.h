@@ -46,8 +46,6 @@ struct Face
 struct Vertex
 {
 	HEdge *h; // one of the half-edges points to this vertex
-	int index;
-	int uv_index;
 	Vec3f pos; //model space position
 	Vec3f norm;
 	Vec2f tex_coord;
@@ -55,11 +53,26 @@ struct Vertex
 	Vec3f pos_proj; //projection space position
 	Vec2f pos_screen; //screen space position
 	float screen_z; //screen space z value
+
+	//for comparison
+	int pos_index;
+	int uv_index;
 	Vertex() : h(), pos(), norm(), tex_coord() {}
 	Vertex(HEdge *_h, Vec3f _pos, Vec3f _norm, Vec2f _tex_coord) : h(_h), pos(_pos), norm(_norm), tex_coord(_tex_coord) {}
-	inline bool operator<(const Vertex &v) const { return index < v.index; };
-	inline bool operator==(const Vertex &v) const { return index == v.index; };
-	inline bool operator>(const Vertex &v) const { return index > v.index; };
+	// inline bool operator<(const Vertex &v) const { return index < v.index; };
+	// inline bool operator==(const Vertex &v) const { return index == v.index; };
+	// inline bool operator>(const Vertex &v) const { return index > v.index; };
+	inline bool operator<(const Vertex &v) const {
+        return (pos_index< v.pos_index) || ((pos_index == v.pos_index) && (uv_index < v.uv_index));
+    }
+
+    inline bool operator==(const Vertex &v) const {
+        return (pos_index == v.pos_index) && (uv_index == v.uv_index);
+    }
+
+    inline bool operator>(const Vertex &v) const {
+        return (pos_index > v.pos_index) || ((pos_index == v.pos_index) && (uv_index > v.uv_index));
+    }
 };
 
 struct HEdge_Compare
@@ -82,7 +95,7 @@ struct Vertex_Compare
 {
 	bool operator()(const Vertex *a, const Vertex *b) const
 	{
-		return a->index < b->index;
+		return a->pos_index < b->pos_index || (a->pos_index == b->pos_index && a->uv_index < b->uv_index);
 	}
 };
 

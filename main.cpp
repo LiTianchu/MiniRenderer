@@ -323,7 +323,8 @@ int main(int argc, char **argv)
 
     if (argc >= 2)
     {
-        HEModel he_model_loaded = HEModel("obj/diablo3_pose/diablo3_pose.obj");
+        HEModel he_model_loaded = HEModel("obj/african_head/african_head.obj");
+        //HEModel he_model_loaded = HEModel("obj/diablo3_pose/diablo3_pose.obj");
         //HEModel he_model_loaded = HEModel("obj/cube.obj");
         if (std::string(argv[1]) == "wireframe")
         {
@@ -340,7 +341,8 @@ int main(int argc, char **argv)
         else if (std::string(argv[1]) == "texture")
         {
             TGAImage texture = TGAImage();
-            texture.read_tga_file("obj/diablo3_pose/diablo3_pose_diffuse.tga");
+            //texture.read_tga_file("obj/diablo3_pose/diablo3_pose_diffuse.tga");
+            texture.read_tga_file("obj/african_head/african_head_diffuse.tga");
             render_model(he_model_loaded, texture, new Diffuse_Map_Shader(), zbuffer, image, Vec3f(0, 0, -1), Mode::TEXTURE);
         }
         else if (std::string(argv[1]) == "uv")

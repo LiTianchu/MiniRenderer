@@ -71,29 +71,19 @@ HEModel::HEModel(const char *filename) : h_edges(), faces(), vertices()
                 --inorm;
 
                 Vertex *v = new Vertex(); // create the vertex object
-                v->index = ipos;
+                v->pos_index = ipos;
                 v->uv_index = itc;
+                v->pos = pos_list[ipos];
+                v->tex_coord = tex_coord_list[itc];
+                v->norm = norm_list[inorm];
 
                 std::pair pair = vertices.insert(v);
 
                 // if has duplicate value in the set, then reference v to that duplicate value
                 if (!pair.second)
                 {
-                    if(v->uv_index != (*pair.first)->uv_index)
-                    {
-                        
-                        diff_uv_count++;
-                        std::cout << "vertex " << v->index << " with uv: " << v->uv_index << " has same index but diff uv with " <<  (*pair.first)->uv_index << std::endl;
-                    }
                     v = *pair.first; // refer the v pointer to the already stored vertex
                 }
-                else
-                {
-                    v->pos = pos_list[ipos];
-                    v->tex_coord = tex_coord_list[itc];
-                    v->norm = norm_list[inorm];
-                }
-
                 tri.push_back(v);
             }
 
@@ -105,13 +95,14 @@ HEModel::HEModel(const char *filename) : h_edges(), faces(), vertices()
 
     //lambda for hashing of edges
     auto edge_hash = [](const Edge* a){
-        return std::hash<int>{}(a->v1->index) ^ std::hash<int>{}(a->v2->index);
+        return std::hash<int>{}(a->v1->pos_index) ^ std::hash<int>{}(a->v2->pos_index);
     };
 
     //lambda for equality of edges
     auto edge_equal = [](const Edge* a, const Edge* b) {
     // Compare edges based on their vertices, regardless of the order
-    return (a->v1 == b->v1 && a->v2 == b->v2) || (a->v1 == b->v2 && a->v2 == b->v1);
+    return (a->v1->pos_index == b->v1->pos_index && a->v2->pos_index == b->v2->pos_index) || 
+                (a->v1->pos_index == b->v2->pos_index && a->v2->pos_index == b->v1->pos_index);
     };
 
     //a temporary hash set for checking whether an edge(undirected) is already inserted
