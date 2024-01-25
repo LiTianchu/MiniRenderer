@@ -108,7 +108,6 @@ private:
 public:
 	HEModel(const char *filename);
 	~HEModel();
-	void qem_simplify();
 	std::set<HEdge *>::iterator h_edges_begin() { return h_edges.begin(); }
 	std::set<HEdge *>::iterator h_edges_end() { return h_edges.end(); }
 	std::set<Face *>::iterator faces_begin() { return faces.begin(); }
@@ -118,6 +117,7 @@ public:
 	int num_of_h_edges() { return h_edges.size(); }
 	int num_of_faces() { return faces.size(); }
 	int num_of_vertices() { return vertices.size(); }
+	void qem_simplify(int target_num_of_faces);
 
 };
 

@@ -194,9 +194,76 @@ HEModel::HEModel(const char *filename) : h_edges(), faces(), vertices()
     std::cout << "\tnum of edges with no pair: " << num_of_edges_no_pair << std::endl;
 }
 
-void qem_simplify(){
-    //implement mesh simplification using quadric error metrics
+Vec3f get_face_norm(const Face& f){
+    HEdge* e1 = f.h;
+    HEdge* e2 = e1->next;
+    Vec3f face_normal = (e1->v->pos - e1->prev->v->pos).cross(e2->v->pos - e2->prev->v->pos);
+    return face_normal.normalize();
+}
+
+std::vector<HEdge*> get_incident_edges(const Vertex& v){
+    std::vector<HEdge*> incident_edges;
+    HEdge* current_edge = v.h;
+    do{
+        incident_edges.push_back(current_edge);
+        current_edge = current_edge->pair->next;
+    }while(current_edge!=v.h);
+    return incident_edges;
+}
+
+Matrix get_quadric_err(const Vertex& vertex){
+    Matrix Q = Matrix(4,4);
+    //To compute error quadric Q of the currect vertex, add all the Kp of the adjacent faces
+    std::vector<HEdge*> incident_edges = get_incident_edges(vertex);
+    for(HEdge* e : incident_edges){ //iterate through all the incident edges
+    //The fundamental error matrix Kp is defined as:
+    //Kp = a^2 ab ac ad
+    //     ab b^2 bc bd
+    //     ac bc c^2 cd
+    //     ad bd cd d^2
+    //a,b,c,d are coefficients of plane equation: ax+by+cz+d=0
+        Face* f = e->f; //find the face of the incident edge
+        Vec3f norm = get_face_norm(*f);
+        float a = norm.x;
+        float b = norm.y;
+        float c = norm.z;
+        float d = -(norm * e->v->pos); //n * p1
+        
+        Matrix Kp = Matrix(4,4);
+        Kp[0][0] = a*a;
+        Kp[0][1] = a*b;
+        Kp[0][2] = a*c;
+        Kp[0][3] = a*d;
+        Kp[1][0] = a*b;
+        Kp[1][1] = b*b;
+        Kp[1][2] = b*c;
+        Kp[1][3] = b*d;
+        Kp[2][0] = a*c;
+        Kp[2][1] = b*c;
+        Kp[2][2] = c*c;
+        Kp[2][3] = c*d;
+        Kp[3][0] = a*d;
+        Kp[3][1] = b*d;
+        Kp[3][2] = c*d;
+        Kp[3][3] = d*d;
+        Q = Q + Kp; //add the Kp to the quadric error matrix
+    }
+}
+
+void HEModel::qem_simplify(int target_num_of_faces){
+    //1. compute all the Q matrices for all the vertices
+    //2. identify all the valid pairs of vertices
+    //3. compute the optimal contraction position V' for each pair
+    //4. place all the pairs in a priority queue, ordered by the error metric
+    //5. pop the pair with the smallest error metric from the PQ
+    //6. contract the pair(move v1 and v2 to v', connext all incident edges of v2 to v1, delete v2 and any degenerate faces)
+    //7. update the Q matrices of all the vertices affected by the contraction
+    //8. repeat 5-7 until the target number of faces is reached
     
+    //implement mesh simplification using quadric error metrics
+    while(num_of_vertices()<target_num_of_faces){
+
+    }
 
 }
 HEModel::~HEModel()

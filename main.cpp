@@ -265,7 +265,7 @@ void wireframe_dfs(Face& f, bool (&faces_visited)[], TGAImage& image)
         int x1 = (pos_end.x + 1.0) / 2.0 * image.get_width();
         int y1 = (pos_end.y + 1.0) / 2.0 * image.get_height();
         
-        draw_line(x0, y0, x1, y1, image, h_edge->pair == NULL ? red : white);
+        draw_line(x0, y0, x1, y1, image, blue);
         h_edge = h_edge->next;
     } while (h_edge != f.h);
 
@@ -344,6 +344,9 @@ int main(int argc, char **argv)
             //texture.read_tga_file("obj/diablo3_pose/diablo3_pose_diffuse.tga");
             texture.read_tga_file("obj/african_head/african_head_diffuse.tga");
             render_model(he_model_loaded, texture, new Diffuse_Map_Shader(), zbuffer, image, Vec3f(0, 0, -1), Mode::TEXTURE);
+        }else if(std::string(argv[1]) == "shaded-wireframe"){
+            render_model(he_model_loaded, TGAImage(), new Flat_Shader(), zbuffer, image, Vec3f(0, 0, -1), Mode::FLAT);
+            draw_mesh_wireframe_dfs(he_model_loaded, image);
         }
         else if (std::string(argv[1]) == "uv")
         {
