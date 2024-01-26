@@ -227,7 +227,7 @@ std::pair<std::vector<HEdge *>, bool> get_incident_edges(const Vertex &v)
     return std::pair(incident_edges, true);
 }
 
-Matrix get_quadric_err(const Vertex &vertex)
+Matrix get_quadric_err_mat(const Vertex &vertex)
 {
     Matrix Q = Matrix(4, 4);
     // To compute error quadric Q of the currect vertex, add all the Kp of the adjacent faces
@@ -302,7 +302,7 @@ float compute_error(const Vec3f &v, const Matrix &Q)
     return error_matrix[0][0];
 }
 
-Matrix compute_v_bar(Matrix &q1, Matrix &q2)
+Matrix get_v_bar(Matrix &q1, Matrix &q2)
 {
     Matrix q_bar = q1 + q2;
 
@@ -327,7 +327,7 @@ Matrix compute_v_bar(Matrix &q1, Matrix &q2)
     std::pair<Matrix, bool> a_inv = a.inverse();
     if (!a_inv.second)
     {
-        std::cout << "Matrix is not invertible" << std::endl;
+        std::cout << "Matrix A is not invertible!" << std::endl;
     }
 
     Matrix b = Matrix(4, 1);
@@ -372,7 +372,7 @@ void HEModel::qem_simplify(int target_num_of_faces)
     for (v_itr; v_itr != vertices_end(); ++v_itr)
     {
         Vertex *curr_v = *v_itr;
-        Matrix Q = get_quadric_err(*curr_v);
+        Matrix Q = get_quadric_err_mat(*curr_v);
         float error = compute_error(curr_v->pos, Q);
 
         // if (std::isnan(error))
@@ -398,7 +398,9 @@ void HEModel::qem_simplify(int target_num_of_faces)
         // compute the optimal contraction position V bar for each pair
         Matrix Q1 = Q_matrices[v1];
         Matrix Q2 = Q_matrices[v2];
-        Matrix v_bar = compute_v_bar(Q1, Q2);
+        Matrix v_bar = get_v_bar(Q1, Q2);
+        
+        std::cout << "v1: " << v1->pos << "v2: " << v2->pos << "v_bar: " << v_bar << "\n" << std::endl;
     }
 }
 HEModel::~HEModel()

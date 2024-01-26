@@ -272,8 +272,9 @@ public:
 	{
 		assert(rows == cols);
 		// if the determinant is 0, then the matrix is not invertible
-		if(abs(determinant()) < std::numeric_limits<float>::epsilon()){
-			return std::pair(*this,false);
+		if (abs(determinant()) < std::numeric_limits<float>::epsilon())
+		{
+			return std::pair(*this, false);
 		}
 		// augmenting the square matrix with the identity matrix of the same dimensions a => [ai]
 		Matrix result(rows, cols * 2);
@@ -317,22 +318,23 @@ public:
 		for (int i = 0; i < rows; i++)
 			for (int j = 0; j < cols; j++)
 				truncate[i][j] = result[i][j + cols];
-		return std::pair(truncate,true);
+		return std::pair(truncate, true);
 	}; // returns the inverse of the matrix
 
 	// operator overloading for printing
 	friend std::ostream &operator<<(std::ostream &s, Matrix &m)
 	{
+		s << "(";
 		for (int i = 0; i < m.nrows(); i++)
 		{
 			for (int j = 0; j < m.ncols(); j++)
 			{
-				s << m[i][j];
+				s << m[i][j] << " ";
 				if (j < m.ncols() - 1)
 					s << "\t";
 			}
-			s << "\n";
 		}
+		s << ")";
 		return s;
 	};
 };
