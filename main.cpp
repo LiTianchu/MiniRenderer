@@ -324,6 +324,7 @@ int main(int argc, char **argv)
     if (argc >= 2)
     {
         HEModel he_model_loaded = HEModel("obj/african_head/african_head.obj");
+        he_model_loaded.qem_simplify(200);
         //HEModel he_model_loaded = HEModel("obj/diablo3_pose/diablo3_pose.obj");
         //HEModel he_model_loaded = HEModel("obj/cube.obj");
         if (std::string(argv[1]) == "wireframe")
