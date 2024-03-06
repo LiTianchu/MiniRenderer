@@ -7,6 +7,7 @@
 #include <unordered_set>
 #include "he_model.h"
 #include <typeindex>
+#include <queue>
 
 HEModel::HEModel(const char *filename) : h_edges(), faces(), vertices()
 { // constructor definition
@@ -219,7 +220,7 @@ std::pair<std::vector<HEdge *>, bool> get_incident_edges(const Vertex &v)
         incident_edges.push_back(current_edge);
         if (current_edge->pair == NULL)
         {
-            std::cout << "half edge has no pair" << std::endl;
+            //std::cout << "half edge has no pair" << std::endl;
             return std::pair(incident_edges, false); // return false if the half edge has no pair (vertex on boundary)
         }
         current_edge = current_edge->pair->next->next;
@@ -227,7 +228,7 @@ std::pair<std::vector<HEdge *>, bool> get_incident_edges(const Vertex &v)
     return std::pair(incident_edges, true);
 }
 
-Matrix get_quadric_err_mat(const Vertex &vertex)
+std::pair<Matrix,bool> get_quadric_err_mat(const Vertex &vertex)
 {
     Matrix Q = Matrix(4, 4);
     // To compute error quadric Q of the currect vertex, add all the Kp of the adjacent faces
@@ -242,7 +243,7 @@ Matrix get_quadric_err_mat(const Vertex &vertex)
                 Q[i][j] = std::numeric_limits<float>::max();
             }
         }
-        return Q;
+        return std::pair(Q,false);
     }
 
     for (HEdge *e : incident_edges.first)
@@ -279,27 +280,37 @@ Matrix get_quadric_err_mat(const Vertex &vertex)
         Kp[3][3] = d * d;
         Q = Q + Kp; // add the Kp to the quadric error matrix
     }
-    return Q;
+    return std::pair(Q,true);
 }
 
-float compute_error(const Vec3f &v, const Matrix &Q)
+float compute_error(Matrix m, const Matrix &Q)
 {
     // compute the error of the vertex v using the quadric error matrix Q
     // error = v^T * Q * v
-    Matrix v_matrix = Matrix(4, 1);
     Matrix vt_matrix = Matrix(1, 4);
 
     // homogeneous coordinate
     for (int i = 0; i < 3; i++)
     {
-        v_matrix[i][0] = v.raw[i];
-        vt_matrix[0][i] = v.raw[i];
+        vt_matrix[0][i] = m[i][0];
     }
-    v_matrix[3][0] = 1.f;
     vt_matrix[0][3] = 1.f;
 
-    Matrix error_matrix = vt_matrix * Q * v_matrix;
+    Matrix error_matrix = vt_matrix * Q * m;
     return error_matrix[0][0];
+}
+
+float compute_error(const Vec3f &v, const Matrix &Q)
+{
+    Matrix v_matrix = Matrix(4, 1);
+
+    for (int i = 0; i < 3; i++)
+    {
+        v_matrix[i][0] = v.raw[i];
+    }
+    v_matrix[3][0] = 1.f;
+
+    return compute_error(v_matrix, Q);
 }
 
 Matrix get_v_bar(Matrix &q1, Matrix &q2)
@@ -341,6 +352,30 @@ Matrix get_v_bar(Matrix &q1, Matrix &q2)
     return v_bar_matrix;
 }
 
+void contract_pair(Vertex *v1, Vertex *v2, Matrix &v_bar)
+{
+    // move v1 and v2 to v_bar
+    v1->pos = Vec3f(v_bar[0][0], v_bar[1][0], v_bar[2][0]);
+    v1->uv_index = v2->uv_index;
+    v1->pos_index = v2->pos_index;
+
+    // connect all incident edges of v2 to v1
+    std::pair<std::vector<HEdge *>, bool> incident_edges = get_incident_edges(*v2);
+    if (!incident_edges.second)
+    {
+        std::cout << "Vertex is on boundary, cannot contract" << std::endl;
+        return;
+    }
+
+    for (HEdge *e : incident_edges.first)
+    {
+        e->v = v1;
+    }
+
+    // delete v2 and any degenerate faces surrounding it
+
+}
+
 void HEModel::qem_simplify(int target_num_of_faces)
 {
     // 1. compute all the Q matrices for all the vertices
@@ -365,30 +400,47 @@ void HEModel::qem_simplify(int target_num_of_faces)
 
     // hashmap for storing the Q matrices of all the vertices
     std::unordered_map<Vertex *, Matrix, decltype(vertex_hash), decltype(vertex_equal)> Q_matrices(10, vertex_hash, vertex_equal);
-
     std::set<Vertex *>::iterator v_itr = vertices_begin();
 
     // assign Q matrix to every vertex
     for (v_itr; v_itr != vertices_end(); ++v_itr)
     {
         Vertex *curr_v = *v_itr;
-        Matrix Q = get_quadric_err_mat(*curr_v);
+        std::pair<Matrix,bool> pair = get_quadric_err_mat(*curr_v);
+        Matrix Q = pair.first;
         float error = compute_error(curr_v->pos, Q);
 
-        // if (std::isnan(error))
-        // {
-        //     std::cout << "error is nan" << std::endl;
-        // }
+        //if (std::isnan(error))
+        //{
+        //    std::cout << "error is nan" << ", on the edge: "<< !pair.second << std::endl;
+        //}
         // else
         // {
-        //     std::cout << error << std::endl;
+        //     std::cout << error <<", on the edge: "<< !pair.second << std::endl;
         // }
         Q_matrices[curr_v] = Q;
     }
 
-    std::set<HEdge *>::iterator e_itr = h_edges_begin();
+    
 
-    for (e_itr; e_itr != h_edges_end(); ++e_itr)
+    using vertex_pair = std::pair<Vertex *, Vertex *>;
+    auto compare_cost = [Q_matrices] (const vertex_pair &a, const vertex_pair &b)
+    {
+        Matrix a_Q1 = Q_matrices.at(a.first);
+        Matrix a_Q2 = Q_matrices.at(a.second);
+        Matrix a_v_bar = get_v_bar(a_Q1, a_Q2);
+        float a_error = compute_error(a_v_bar, a_Q1 + a_Q2);
+
+        Matrix b_Q1 = Q_matrices.at(b.first);
+        Matrix b_Q2 = Q_matrices.at(b.second);
+        Matrix b_v_bar = get_v_bar(b_Q1, b_Q2);
+        float b_error = compute_error(b_v_bar, b_Q1 + b_Q2);
+
+        return a_error > b_error;
+    };
+    std::priority_queue<vertex_pair, std::vector<vertex_pair> ,decltype(compare_cost)> pair_pq(compare_cost);
+
+    for (std::set<HEdge *>::iterator e_itr = h_edges_begin(); e_itr != h_edges_end(); ++e_itr)
     {
         // obtain the pair of vertices
         HEdge *curr_e = *e_itr;
@@ -396,11 +448,30 @@ void HEModel::qem_simplify(int target_num_of_faces)
         Vertex *v2 = curr_e->prev->v;
 
         // compute the optimal contraction position V bar for each pair
-        Matrix Q1 = Q_matrices[v1];
-        Matrix Q2 = Q_matrices[v2];
+        //Matrix Q1 = Q_matrices[v1];
+        //Matrix Q2 = Q_matrices[v2];
+        //Matrix v_bar = get_v_bar(Q1, Q2);
+        //float error = compute_error(v_bar, Q1 + Q2);
+        vertex_pair pair = std::pair(v1, v2);
+        pair_pq.push(pair);
+        //std::cout << "v1: " << v1->pos << "v2: " << v2->pos << "v_bar: " << v_bar << std::endl;
+        //std::cout << "error: " << error << "\n" << std::endl;
+    }
+
+    // pop the pair with the smallest error metric from the PQ
+    while(num_of_faces() > target_num_of_faces){
+        vertex_pair pair = pair_pq.top();
+        pair_pq.pop();
+        Vertex *v1 = pair.first;
+        Vertex *v2 = pair.second;
+        Matrix Q1 = Q_matrices.at(v1);
+        Matrix Q2 = Q_matrices.at(v2);
         Matrix v_bar = get_v_bar(Q1, Q2);
-        
-        std::cout << "v1: " << v1->pos << "v2: " << v2->pos << "v_bar: " << v_bar << "\n" << std::endl;
+        float error = compute_error(v_bar, Q1 + Q2);
+        std::cout << "error: " << error << std::endl;
+        contract_pair(v1, v2, v_bar);
+        Q_matrices[v1] = Q1 + Q2;
+        Q_matrices.erase(v2);
     }
 }
 HEModel::~HEModel()

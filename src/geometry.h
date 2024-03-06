@@ -171,6 +171,12 @@ public:
 		assert(i >= 0 && i < rows);
 		return m[i];
 	};
+	
+	const std::vector<float> &operator[] (const int i) const
+	{
+		assert(i >= 0 && i < rows);
+		return m[i];                              	
+	};
 
 	Matrix operator*(const Matrix &other)
 	{ // matrix multiplication
