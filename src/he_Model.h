@@ -118,6 +118,10 @@ public:
 	int num_of_faces() { return faces.size(); }
 	int num_of_vertices() { return vertices.size(); }
 	void qem_simplify(int target_num_of_faces);
+	void remove_degenerate_faces(Vertex& v);
+	void remove_half_edge(HEdge *he){ h_edges.erase(he); delete he; }
+	void remove_face(Face *f){ faces.erase(f); delete f; }
+	void remove_vertex(Vertex *v){ vertices.erase(v); delete v; }
 
 };
 

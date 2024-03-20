@@ -1,4 +1,5 @@
 #include <iostream>
+#include <stdio.h>
 #include "tgaimage.h"
 #include "model.h"
 #include "he_model.h"
@@ -12,6 +13,7 @@ const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red = TGAColor(255, 0, 0, 255);
 const TGAColor green = TGAColor(0, 255, 0, 255);
 const TGAColor blue = TGAColor(0, 0, 255, 255);
+const Vec3f cameraPos = Vec3f(1, 1, 1);
 
 enum Mode
 {
@@ -234,7 +236,7 @@ void draw_mesh_wireframe(HEModel model, TGAImage &image)
     }
 }
 
-void wireframe_dfs(Face& f, bool (&faces_visited)[], TGAImage& image)
+void wireframe_dfs(const Face& f, bool (&faces_visited)[], TGAImage& image)
 {
     if (faces_visited[f.index])
     {
@@ -295,17 +297,29 @@ void render_model(HEModel model, TGAImage texture, Shader *shader, float *zbuffe
         std::vector<Vec3f> screen_coords;
         std::vector<Vertex> vertices;
         int j = 0;
-        // foreach vertex of the current face, render a line from the current vertex to the next vertex
+
         do
         {
             Vertex curr_vertex = shader->vertex_shader(*(h_edge->v));
+            Matrix curr_vertex_matrix = Matrix::vector2matrix(Vec4f(curr_vertex.pos.x, curr_vertex.pos.y, curr_vertex.pos.z, 1.0f));
+            Matrix rotation_matrix = Matrix::rotation(0, 45, 45);
+            Matrix translation_matrix = Matrix::translation(0.5,0.5,0);
+            Matrix view_matrix = Matrix::model_view(cameraPos, Vec3f(0, 0, 0), Vec3f(0, 1, 0));
+            Matrix projection_matrix = Matrix::persp_projection(cameraPos);
+            Matrix viewport_matrix = Matrix::viewport(0, 0, image.get_width(), image.get_height(), 0, 1);
+            curr_vertex_matrix = (viewport_matrix * projection_matrix * view_matrix * curr_vertex_matrix).cartesian();
+            
+            curr_vertex.pos = Vec3f(curr_vertex_matrix[0][0], curr_vertex_matrix[1][0], curr_vertex_matrix[2][0]);
+            
+            //curr_vertex.pos = dynamic_cast<Vec3f*>(&Matrix::matrix2vector(curr_vertex_matrix));
 
             // map the model coordinates to image coordinates
-            int x_screen = (curr_vertex.pos.x + 1.0) / 2.0 * image.get_width();
-            int y_screen = (curr_vertex.pos.y + 1.0) / 2.0 * image.get_height();
-            float z_index = (curr_vertex.pos.z + 1.0) / 2.0;
-            curr_vertex.pos_screen = Vec2f(x_screen, y_screen);
-            curr_vertex.screen_z = z_index;
+            //int x_screen = (curr_vertex.pos.x + 1.0) / 2.0 * image.get_width();
+            //int y_screen = (curr_vertex.pos.y + 1.0) / 2.0 * image.get_height();
+            //float z_index = (curr_vertex.pos.z + 1.0) / 2.0;
+            
+            curr_vertex.pos_screen = Vec2f(curr_vertex_matrix[0][0], curr_vertex_matrix[1][0]);
+            curr_vertex.screen_z = curr_vertex_matrix[2][0];
             vertices.push_back(curr_vertex);
             h_edge = h_edge->next;
             j++;
@@ -324,7 +338,7 @@ int main(int argc, char **argv)
     if (argc >= 2)
     {
         HEModel he_model_loaded = HEModel("obj/african_head/african_head.obj");
-        he_model_loaded.qem_simplify(200);
+        //he_model_loaded.qem_simplify(200);
         //HEModel he_model_loaded = HEModel("obj/diablo3_pose/diablo3_pose.obj");
         //HEModel he_model_loaded = HEModel("obj/cube.obj");
         if (std::string(argv[1]) == "wireframe")

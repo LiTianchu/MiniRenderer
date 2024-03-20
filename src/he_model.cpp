@@ -313,6 +313,20 @@ float compute_error(const Vec3f &v, const Matrix &Q)
     return compute_error(v_matrix, Q);
 }
 
+float compute_tri_face_area(const HEdge& e){
+    Vec3f v1 = e.v->pos;
+    Vec3f v2 = e.next->v->pos;
+    Vec3f v3 = e.next->next->v->pos;
+
+    // two edges of the triangle
+    Vec3f e1 = v2 - v1;
+    Vec3f e2 = v3 - v1;
+
+    // cross product of the two edges
+    Vec3f cross_prod = e1.cross(e2);
+    return cross_prod.norm()/2; // area of the triangle
+}
+
 Matrix get_v_bar(Matrix &q1, Matrix &q2)
 {
     Matrix q_bar = q1 + q2;
@@ -352,28 +366,93 @@ Matrix get_v_bar(Matrix &q1, Matrix &q2)
     return v_bar_matrix;
 }
 
-void contract_pair(Vertex *v1, Vertex *v2, Matrix &v_bar)
-{
-    // move v1 and v2 to v_bar
-    v1->pos = Vec3f(v_bar[0][0], v_bar[1][0], v_bar[2][0]);
-    v1->uv_index = v2->uv_index;
-    v1->pos_index = v2->pos_index;
-
-    // connect all incident edges of v2 to v1
-    std::pair<std::vector<HEdge *>, bool> incident_edges = get_incident_edges(*v2);
-    if (!incident_edges.second)
+void HEModel::remove_degenerate_faces(Vertex& v){
+    // check if the vertex of a face forms a line or a single point
+    // if so, remove the face and the half edges surrounding that face
+    // then, reconnect the pair relationship of half edges affected by the removal
+    std::pair<std::vector<HEdge *>, bool> incident_edges = get_incident_edges(v);
+    std::cout << "removing degenerate faces" << std::endl;
+    if (!incident_edges.second) // if the vertex is on the boundary, do nothing
     {
-        std::cout << "Vertex is on boundary, cannot contract" << std::endl;
+        std::cout << "vertex is on boundary, cannot remove degenerate faces" << std::endl;
         return;
     }
 
-    for (HEdge *e : incident_edges.first)
-    {
-        e->v = v1;
+    std::unordered_set<HEdge *> edge_delete_list;
+    std::unordered_set<Face *> face_delete_list;
+
+    std::cout << "finding edges and faces to delete" << std::endl;
+    for (HEdge *e : incident_edges.first){
+
+        float area = compute_tri_face_area(*e);
+        if(area < std::numeric_limits<float>::epsilon()){ // if area is close to 0, face is degenerate
+            edge_delete_list.insert(e);
+            edge_delete_list.insert(e->next);
+            edge_delete_list.insert(e->next->next);
+            face_delete_list.insert(e->f);
+            std::cout << "face is degenerate" << std::endl;            
+        }
     }
 
-    // delete v2 and any degenerate faces surrounding it
+    std::cout << "checking for vertex's reference" << std::endl;
 
+    //check if v's incident edge is in the delete list
+    if(edge_delete_list.find(v.h) != edge_delete_list.end()){
+        for(HEdge *e : incident_edges.first){
+            if(edge_delete_list.find(e) == edge_delete_list.end()){ //if the edge is not going to be deleted
+                v.h = e; //re-assign the edge reference of v
+                break;
+            }
+        }
+    }
+
+    std::cout << "deleting edges and faces" << std::endl;
+    //delete the half edges and the faces they are connected to
+    for(HEdge *e : edge_delete_list){
+        //delete the half edge
+        remove_half_edge(e);
+    }
+    for(Face *f : face_delete_list){
+        //delete the face
+        remove_face(f);
+    }
+
+    //reconnect the pair relationship of half edges affected by the removal
+    
+
+}
+
+// void delete_vertex(Vertex* v, const auto& vertex_q_map){
+//     //remove the vertex from the Q matrix
+//     //remove the vertex from the vertex set
+//     //free the memory space
+
+// }
+
+bool contract_pair(Vertex& v1, Vertex& v2, const Matrix& v_bar)
+{
+    // move v1 and v2 to v_bar
+    v1.pos = Vec3f(v_bar[0][0], v_bar[1][0], v_bar[2][0]);
+    v2.pos = Vec3f(v_bar[0][0], v_bar[1][0], v_bar[2][0]);
+
+    //v1.uv_index = v2.uv_index;
+    //v1.pos_index = v2.pos_index;
+
+    // connect all incident edges of v2 to v1
+    std::pair<std::vector<HEdge *>, bool> incident_edges = get_incident_edges(v2);
+    if (!incident_edges.second)
+    {
+        std::cout << "Vertex is on boundary, cannot contract" << std::endl;
+        return false;
+    }
+
+    //for each incident edges of v2
+    for (HEdge *e : incident_edges.first)
+    {
+        e->v = &v1;
+    }
+
+    return true;
 }
 
 void HEModel::qem_simplify(int target_num_of_faces)
@@ -408,7 +487,7 @@ void HEModel::qem_simplify(int target_num_of_faces)
         Vertex *curr_v = *v_itr;
         std::pair<Matrix,bool> pair = get_quadric_err_mat(*curr_v);
         Matrix Q = pair.first;
-        float error = compute_error(curr_v->pos, Q);
+        //float error = compute_error(curr_v->pos, Q);
 
         //if (std::isnan(error))
         //{
@@ -420,8 +499,6 @@ void HEModel::qem_simplify(int target_num_of_faces)
         // }
         Q_matrices[curr_v] = Q;
     }
-
-    
 
     using vertex_pair = std::pair<Vertex *, Vertex *>;
     auto compare_cost = [Q_matrices] (const vertex_pair &a, const vertex_pair &b)
@@ -466,12 +543,18 @@ void HEModel::qem_simplify(int target_num_of_faces)
         Vertex *v2 = pair.second;
         Matrix Q1 = Q_matrices.at(v1);
         Matrix Q2 = Q_matrices.at(v2);
+
+        //std::numeric_limits<float>::max();
+        
         Matrix v_bar = get_v_bar(Q1, Q2);
         float error = compute_error(v_bar, Q1 + Q2);
         std::cout << "error: " << error << std::endl;
-        contract_pair(v1, v2, v_bar);
-        Q_matrices[v1] = Q1 + Q2;
-        Q_matrices.erase(v2);
+        bool can_contract = contract_pair(*v1, *v2, v_bar);
+        if(can_contract){
+        // delete v2 and degenerate faces around it
+            remove_degenerate_faces(*v1);
+            remove_vertex(v2);          
+        }
     }
 }
 HEModel::~HEModel()
