@@ -5,6 +5,7 @@
 #include <vector>
 #include <set>
 #include <string>
+#include "tgaimage.h"
 
 struct Face; // forward declare to work around cyclic dependency
 struct Vertex;
@@ -104,6 +105,8 @@ private:
 	std::set<HEdge *, HEdge_Compare> h_edges;
 	std::set<Face *, Face_Compare> faces;
 	std::set<Vertex *, Vertex_Compare> vertices;
+	TGAImage *diffuse_texture;
+	TGAImage *normal_map_texture;
 
 public:
 	HEModel(const char *filename);

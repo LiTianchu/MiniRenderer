@@ -13,7 +13,7 @@ const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red = TGAColor(255, 0, 0, 255);
 const TGAColor green = TGAColor(0, 255, 0, 255);
 const TGAColor blue = TGAColor(0, 0, 255, 255);
-const Vec3f cameraPos = Vec3f(1, 1, 1);
+const Vec3f cameraPos = Vec3f(1, 1, 3);
 
 enum Mode
 {
@@ -181,7 +181,7 @@ void rasterize_triangle(std::vector<Vertex> vertices, Shader *shader, TGAImage t
             {
                 zbuffer[zbuffer_index] = interpolated_z; // update z buffer
                 Fragment_Shader_Payload frag_data =
-                    Fragment_Shader_Payload(0, Vec3f(0, 0, 0),
+                    Fragment_Shader_Payload(0,light_dir, Vec3f(0, 0, 0),
                                             Vec3f(0, 0, 0), Vec2f(0, 0),
                                             color.to_vec3(), &texture);
                 if (mode == Mode::FLAT)
