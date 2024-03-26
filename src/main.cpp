@@ -8,12 +8,13 @@
 #include "shaders/gouraud_shader.cpp"
 #include "shaders/uv_shader.cpp"
 #include "shaders/diffuse_map_shader.cpp"
+#include "engine.h"
 
 const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red = TGAColor(255, 0, 0, 255);
 const TGAColor green = TGAColor(0, 255, 0, 255);
 const TGAColor blue = TGAColor(0, 0, 255, 255);
-const Vec3f cameraPos = Vec3f(1, 1, 3);
+Vec3f cameraPos = Vec3f(1, 1, 3);
 
 enum Mode
 {
@@ -181,7 +182,7 @@ void rasterize_triangle(std::vector<Vertex> vertices, Shader *shader, TGAImage t
             {
                 zbuffer[zbuffer_index] = interpolated_z; // update z buffer
                 Fragment_Shader_Payload frag_data =
-                    Fragment_Shader_Payload(0,light_dir, Vec3f(0, 0, 0),
+                    Fragment_Shader_Payload(0, light_dir, Vec3f(0, 0, 0),
                                             Vec3f(0, 0, 0), Vec2f(0, 0),
                                             color.to_vec3(), &texture);
                 if (mode == Mode::FLAT)
@@ -236,15 +237,15 @@ void draw_mesh_wireframe(HEModel model, TGAImage &image)
     }
 }
 
-void wireframe_dfs(const Face& f, bool (&faces_visited)[], TGAImage& image)
+void wireframe_dfs(const Face &f, bool (&faces_visited)[], TGAImage &image)
 {
     if (faces_visited[f.index])
     {
         return;
     }
-    //draw the face
+    // draw the face
     HEdge *h_edge = f.h;
-    //std::cout << "drawing face with index: " << f.index << std::endl;
+    // std::cout << "drawing face with index: " << f.index << std::endl;
     std::vector<Face> neighbor_faces;
     do
     {
@@ -254,7 +255,7 @@ void wireframe_dfs(const Face& f, bool (&faces_visited)[], TGAImage& image)
         Vertex *vertex_end = h_edge->v;
         Vec3 pos_start = vertex_start->pos;
         Vec3 pos_end = vertex_end->pos;
-        
+
         HEdge *pair = h_edge->pair;
         if (pair != NULL)
         {
@@ -266,18 +267,17 @@ void wireframe_dfs(const Face& f, bool (&faces_visited)[], TGAImage& image)
         int y0 = (pos_start.y + 1.0) / 2.0 * image.get_height();
         int x1 = (pos_end.x + 1.0) / 2.0 * image.get_width();
         int y1 = (pos_end.y + 1.0) / 2.0 * image.get_height();
-        
+
         draw_line(x0, y0, x1, y1, image, blue);
         h_edge = h_edge->next;
     } while (h_edge != f.h);
 
     faces_visited[f.index] = true;
 
-    for(Face& n : neighbor_faces)
+    for (Face &n : neighbor_faces)
     {
         wireframe_dfs(n, faces_visited, image);
     }
-    
 }
 
 void draw_mesh_wireframe_dfs(HEModel model, TGAImage &image)
@@ -285,7 +285,6 @@ void draw_mesh_wireframe_dfs(HEModel model, TGAImage &image)
     bool faces_visited[model.num_of_faces()] = {false};
     wireframe_dfs(**model.faces_begin(), faces_visited, image);
 }
-
 
 void render_model(HEModel model, TGAImage texture, Shader *shader, float *zbuffer, TGAImage &image, Vec3f light_dir, Mode mode)
 {
@@ -303,21 +302,21 @@ void render_model(HEModel model, TGAImage texture, Shader *shader, float *zbuffe
             Vertex curr_vertex = shader->vertex_shader(*(h_edge->v));
             Matrix curr_vertex_matrix = Matrix::vector2matrix(Vec4f(curr_vertex.pos.x, curr_vertex.pos.y, curr_vertex.pos.z, 1.0f));
             Matrix rotation_matrix = Matrix::rotation(0, 45, 45);
-            Matrix translation_matrix = Matrix::translation(0.5,0.5,0);
+            Matrix translation_matrix = Matrix::translation(0.5, 0.5, 0);
             Matrix view_matrix = Matrix::model_view(cameraPos, Vec3f(0, 0, 0), Vec3f(0, 1, 0));
             Matrix projection_matrix = Matrix::persp_projection(cameraPos);
             Matrix viewport_matrix = Matrix::viewport(0, 0, image.get_width(), image.get_height(), 0, 1);
             curr_vertex_matrix = (viewport_matrix * projection_matrix * view_matrix * curr_vertex_matrix).cartesian();
-            
+
             curr_vertex.pos = Vec3f(curr_vertex_matrix[0][0], curr_vertex_matrix[1][0], curr_vertex_matrix[2][0]);
-            
-            //curr_vertex.pos = dynamic_cast<Vec3f*>(&Matrix::matrix2vector(curr_vertex_matrix));
+
+            // curr_vertex.pos = dynamic_cast<Vec3f*>(&Matrix::matrix2vector(curr_vertex_matrix));
 
             // map the model coordinates to image coordinates
-            //int x_screen = (curr_vertex.pos.x + 1.0) / 2.0 * image.get_width();
-            //int y_screen = (curr_vertex.pos.y + 1.0) / 2.0 * image.get_height();
-            //float z_index = (curr_vertex.pos.z + 1.0) / 2.0;
-            
+            // int x_screen = (curr_vertex.pos.x + 1.0) / 2.0 * image.get_width();
+            // int y_screen = (curr_vertex.pos.y + 1.0) / 2.0 * image.get_height();
+            // float z_index = (curr_vertex.pos.z + 1.0) / 2.0;
+
             curr_vertex.pos_screen = Vec2f(curr_vertex_matrix[0][0], curr_vertex_matrix[1][0]);
             curr_vertex.screen_z = curr_vertex_matrix[2][0];
             vertices.push_back(curr_vertex);
@@ -338,34 +337,50 @@ int main(int argc, char **argv)
     if (argc >= 2)
     {
         HEModel he_model_loaded = HEModel("obj/african_head/african_head.obj");
-        //he_model_loaded.qem_simplify(200);
-        //HEModel he_model_loaded = HEModel("obj/diablo3_pose/diablo3_pose.obj");
-        //HEModel he_model_loaded = HEModel("obj/cube.obj");
+        TGAImage diffuse_texture = TGAImage();
+        diffuse_texture.read_tga_file("obj/african_head/african_head_diffuse.tga");
+        he_model_loaded.set_diffuse_texture(&diffuse_texture);
+
+        Engine engine = Engine(Vec3f(0, 0, -1), 1, cameraPos, zbuffer, &image);
+        
+        // he_model_loaded.qem_simplify(200);
+        // HEModel he_model_loaded = HEModel("obj/diablo3_pose/diablo3_pose.obj");
+        // HEModel he_model_loaded = HEModel("obj/cube.obj");
         if (std::string(argv[1]) == "wireframe")
         {
-            draw_mesh_wireframe_dfs(he_model_loaded, image);
+            //draw_mesh_wireframe_dfs(he_model_loaded, image);
+            engine.render_model_wireframe(he_model_loaded);
+
         }
         else if (std::string(argv[1]) == "flat")
         {
-            render_model(he_model_loaded, TGAImage(), new Flat_Shader(), zbuffer, image, Vec3f(0, 0, -1), Mode::FLAT);
+            //render_model(he_model_loaded, TGAImage(), new Flat_Shader(), zbuffer, image, Vec3f(0, 0, -1), Mode::FLAT);
+
         }
         else if (std::string(argv[1]) == "smooth")
         {
-            render_model(he_model_loaded, TGAImage(), new Gouraud_Shader(), zbuffer, image, Vec3f(0, 0, -1), Mode::SMOOTH);
+            //render_model(he_model_loaded, TGAImage(), new Gouraud_Shader(), zbuffer, image, Vec3f(0, 0, -1), Mode::SMOOTH);
+            engine.render_shaded_model(he_model_loaded, new Gouraud_Shader());
         }
         else if (std::string(argv[1]) == "texture")
         {
-            TGAImage texture = TGAImage();
-            //texture.read_tga_file("obj/diablo3_pose/diablo3_pose_diffuse.tga");
-            texture.read_tga_file("obj/african_head/african_head_diffuse.tga");
-            render_model(he_model_loaded, texture, new Diffuse_Map_Shader(), zbuffer, image, Vec3f(0, 0, -1), Mode::TEXTURE);
-        }else if(std::string(argv[1]) == "shaded-wireframe"){
-            render_model(he_model_loaded, TGAImage(), new Flat_Shader(), zbuffer, image, Vec3f(0, 0, -1), Mode::FLAT);
-            draw_mesh_wireframe_dfs(he_model_loaded, image);
+            //TGAImage texture = TGAImage();
+            // texture.read_tga_file("obj/diablo3_pose/diablo3_pose_diffuse.tga");
+            //texture.read_tga_file("obj/african_head/african_head_diffuse.tga");
+            //render_model(he_model_loaded, texture, new Diffuse_Map_Shader(), zbuffer, image, Vec3f(0, 0, -1), Mode::TEXTURE);
+            engine.render_shaded_model(he_model_loaded, new Diffuse_Map_Shader());
+        }
+        else if (std::string(argv[1]) == "shaded-wireframe")
+        {
+            //render_model(he_model_loaded, TGAImage(), new Flat_Shader(), zbuffer, image, Vec3f(0, 0, -1), Mode::FLAT);
+            //draw_mesh_wireframe_dfs(he_model_loaded, image);
+            engine.render_model_wireframe(he_model_loaded);
+            engine.render_shaded_model(he_model_loaded, new Flat_Shader());
         }
         else if (std::string(argv[1]) == "uv")
         {
-            render_model(he_model_loaded, TGAImage(), new UV_Shader(), zbuffer, image, Vec3f(0, 0, -1), Mode::UV);
+            //render_model(he_model_loaded, TGAImage(), new UV_Shader(), zbuffer, image, Vec3f(0, 0, -1), Mode::UV);
+            engine.render_shaded_model(he_model_loaded, new UV_Shader());
         }
         else
         {

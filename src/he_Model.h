@@ -125,6 +125,10 @@ public:
 	void remove_half_edge(HEdge *he){ h_edges.erase(he); delete he; }
 	void remove_face(Face *f){ faces.erase(f); delete f; }
 	void remove_vertex(Vertex *v){ vertices.erase(v); delete v; }
+	TGAImage *get_diffuse_texture() { return diffuse_texture; }
+	TGAImage *get_normal_map_texture() { return normal_map_texture; }
+	void set_diffuse_texture(TGAImage *diffuse_texture_) { diffuse_texture = diffuse_texture_; }
+	void set_normal_map_texture(TGAImage *normal_map_texture_) { normal_map_texture = normal_map_texture_; }
 
 };
 

@@ -16,7 +16,8 @@ struct Fragment_Shader_Payload{
 
     TGAImage* texture;
     Fragment_Shader_Payload(){ }
-    Fragment_Shader_Payload(float light_intensity_, Vec3f light_dir_, Vec3f pos_, Vec3f norm_, Vec2f tex_coord_, Vec3i color_, TGAImage* texture_) : light_intensity(light_intensity_), light_dir(light_dir_), pos(pos_), norm(norm_), tex_coord(tex_coord_), base_color(color_), texture(texture_) { }
+    Fragment_Shader_Payload(float light_intensity_, Vec3f light_dir_, Vec3f pos_, Vec3f norm_, Vec2f tex_coord_, Vec3i color_, TGAImage* texture_) : 
+    light_intensity(light_intensity_), light_dir(light_dir_), pos(pos_), norm(norm_), tex_coord(tex_coord_), base_color(color_), texture(texture_) { }
 };
 
 // class Vertex_Shader_Payload{
