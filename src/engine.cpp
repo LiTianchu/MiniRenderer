@@ -43,9 +43,9 @@ void Engine::render_shaded_model(HEModel model, Shader *shader)
             h_edge = h_edge->next;
             j++;
         } while (h_edge != (*face_itr)->h);
-
+        Vec3f face_normal = Math::get_face_normal(vertices);
         Fragment_Shader_Payload frag_data = Fragment_Shader_Payload(0, main_light_dir, Vec3f(0, 0, 0),
-                                                                    Vec3f(0, 0, 0), Vec2f(0, 0),
+                                                                    Vec3f(0, 0, 0), face_normal, Vec2f(0, 0),
                                                                     TGAColor(255, 255, 255, 255).to_vec3(), model.get_diffuse_texture());
         rasterize_triangle(vertices, shader, frag_data);
     }
@@ -103,8 +103,8 @@ void Engine::wireframe_dfs(const Face& f, bool (&faces_visited)[])
 
 void Engine::rasterize_triangle(std::vector<Vertex> vertices, Shader *shader, Fragment_Shader_Payload &frag_data)
 {
-    Vec3f face_normal = (vertices[2].pos - vertices[0].pos).cross(vertices[1].pos - vertices[0].pos);
-    face_normal.normalize();
+    // Vec3f face_normal = (vertices[2].pos - vertices[0].pos).cross(vertices[1].pos - vertices[0].pos);
+    // face_normal.normalize();
 
     //  extract the vertex data
     Vec2f pts[] = {vertices[0].pos_screen, vertices[1].pos_screen, vertices[2].pos_screen};
@@ -153,12 +153,15 @@ void Engine::rasterize_triangle(std::vector<Vertex> vertices, Shader *shader, Fr
                 // }
                 // else
                 // {
+                
+                // TODO: calculate the interpolated normal
                 std::vector<float> I_at_vertices = {norms[0] * main_light_dir, norms[1] * main_light_dir, norms[2] * main_light_dir};
                 float interpolated_I = b_coord.x * I_at_vertices[0] + b_coord.y * I_at_vertices[1] + b_coord.z * I_at_vertices[2];
                 float interpolated_u = b_coord.x * tex_coords[0].u + b_coord.y * tex_coords[1].u + b_coord.z * tex_coords[2].u;
                 float interpolated_v = b_coord.x * tex_coords[0].v + b_coord.y * tex_coords[1].v + b_coord.z * tex_coords[2].v;
+                
                 frag_data.tex_coord = Vec2f(interpolated_u, interpolated_v);
-                frag_data.light_intensity = interpolated_I;
+                frag_data.light_intensity = interpolated_I * main_light_intensity;
                 // }
                 // obtain shaded color using shader
                 Vec3i color_vector = shader->fragment_shader(frag_data);
