@@ -16,11 +16,14 @@ void Engine::render_shaded_model(HEModel model, Shader *shader)
         // initialize the arrays to store vertex data
         std::vector<Vec3f> screen_coords;
         std::vector<V2F> processed_vertices;
+        std::vector<Vertex> tri;
         int j = 0;
 
         do
         {
             Vertex *v = h_edge->v;
+            tri.push_back(*v);
+
             V2F processed_v = shader->vertex_shader(*v);
             //TODO: put all these into the vertex shader
             Matrix processed_v_matrix = Matrix::vector2matrix(Vec4f(processed_v.pos.x, processed_v.pos.y, processed_v.pos.z, 1.0f));
@@ -35,16 +38,16 @@ void Engine::render_shaded_model(HEModel model, Shader *shader)
             processed_v.norm = v->norm;
             processed_v.tex_coord = v->tex_coord;
 
-            //processed_v.pos_screen = Vec2f(processed_v_matrix[0][0], processed_v_matrix[1][0]);
-            //processed_v.screen_z = processed_v_matrix[2][0];
             processed_vertices.push_back(processed_v);
             h_edge = h_edge->next;
             j++;
         } while (h_edge != (*face_itr)->h);
-        // Vec3f face_normal = Math::get_face_normal(processed_vertices);
-        // V2F v2f = V2F(0, main_light_dir, Vec3f(0, 0, 0),
-        //                                                             Vec3f(0, 0, 0), face_normal, Vec2f(0, 0),
-        //                                                             TGAColor(255, 255, 255, 255).to_vec3(), model.get_diffuse_texture());
+
+         Vec3f face_normal = Math::get_face_normal(tri).normalize();
+         for(int i = 0; i < processed_vertices.size(); i++){
+            processed_vertices[i].face_norm = face_normal;
+         }
+
         rasterize_triangle(processed_vertices, shader);
     }
 }
@@ -102,9 +105,6 @@ void Engine::wireframe_dfs(const Face& f, bool (&faces_visited)[])
 
 void Engine::rasterize_triangle(std::vector<V2F> vert_data, Shader *shader)
 {
-    // Vec3f face_normal = (vert_data[2].pos - vert_data[0].pos).cross(vert_data[1].pos - vert_data[0].pos);
-    // face_normal.normalize();
-
     //  extract the vertex data
     Vec3f pts[] = {vert_data[0].pos, vert_data[1].pos, vert_data[2].pos};
     float z_indices[] = {vert_data[0].pos.z, vert_data[1].pos.z, vert_data[2].pos.z};
@@ -144,23 +144,18 @@ void Engine::rasterize_triangle(std::vector<V2F> vert_data, Shader *shader)
                 z_buffer[zbuffer_index] = interpolated_z; // update z buffer
                 interpolated_v2f.pos = Vec3f(x,y,interpolated_z);
                 
-                // TODO: interpolate from the v2f type
-                //std::vector<float> I_at_vertices = {norms[0] * main_light_dir, norms[1] * main_light_dir, norms[2] * main_light_dir};
-
                 Vec3 interpolated_norm = {b_coord.x * norms[0].x  + b_coord.y * norms[1].x + b_coord.z * norms[2].x,
                                           b_coord.x * norms[0].y  + b_coord.y * norms[1].y + b_coord.z * norms[2].y,
                                           b_coord.x * norms[0].z  + b_coord.y * norms[1].z + b_coord.z * norms[2].z};
                 interpolated_v2f.norm = interpolated_norm;
-                //std::cout << interpolated_norm << std::endl;
 
-                //float interpolated_I = b_coord.x * I_at_vertices[0] + b_coord.y * I_at_vertices[1] + b_coord.z * I_at_vertices[2];
                 float interpolated_u = b_coord.x * tex_coords[0].u + b_coord.y * tex_coords[1].u + b_coord.z * tex_coords[2].u;
                 float interpolated_v = b_coord.x * tex_coords[0].v + b_coord.y * tex_coords[1].v + b_coord.z * tex_coords[2].v;
                 
                 interpolated_v2f.tex_coord = Vec2f(interpolated_u, interpolated_v);
                 interpolated_v2f.base_color = TGAColor(255, 255, 255, 255).to_vec3();
-                //v2f.light_intensity = interpolated_I * main_light_intensity;
-                // }
+                interpolated_v2f.face_norm = vert_data[0].face_norm;
+                
                 // obtain shaded color using shader
                 Vec3i color_vector = shader->fragment_shader(interpolated_v2f);
                 TGAColor shade_color = TGAColor(color_vector);

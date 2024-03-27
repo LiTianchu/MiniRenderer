@@ -35,8 +35,11 @@ int main(int argc, char **argv)
     {
         HEModel he_model_loaded = HEModel("obj/african_head/african_head.obj");
         TGAImage diffuse_texture = TGAImage();
+        TGAImage normal_map = TGAImage();
         diffuse_texture.read_tga_file("obj/african_head/african_head_diffuse.tga");
+        normal_map.read_tga_file("obj/african_head/african_head_nm.tga");
         he_model_loaded.set_diffuse_texture(&diffuse_texture);
+        he_model_loaded.set_normal_map_texture(&normal_map);
         
         std::cout << "Rendering " << argv[1] << " model" << std::endl;
 
@@ -52,41 +55,32 @@ int main(int argc, char **argv)
 
         // he_model_loaded.qem_simplify(200);
         // HEModel he_model_loaded = HEModel("obj/diablo3_pose/diablo3_pose.obj");
-        // HEModel he_model_loaded = HEModel("obj/cube.obj");
         if (std::string(argv[1]) == "wireframe")
         {
-            //draw_mesh_wireframe_dfs(he_model_loaded, image);
             engine.render_model_wireframe(he_model_loaded);
 
         }
         else if (std::string(argv[1]) == "flat")
         {
-            //render_model(he_model_loaded, TGAImage(), new Flat_Shader(), zbuffer, image, Vec3f(0, 0, -1), Mode::FLAT);
+            engine.render_shaded_model(he_model_loaded, new Flat_Shader(shader_payload));
 
         }
         else if (std::string(argv[1]) == "smooth")
         {
-            //render_model(he_model_loaded, TGAImage(), new Gouraud_Shader(), zbuffer, image, Vec3f(0, 0, -1), Mode::SMOOTH);
             engine.render_shaded_model(he_model_loaded, new Gouraud_Shader(shader_payload));
         }
         else if (std::string(argv[1]) == "texture")
         {
-            //TGAImage texture = TGAImage();
             // texture.read_tga_file("obj/diablo3_pose/diablo3_pose_diffuse.tga");
-            //texture.read_tga_file("obj/african_head/african_head_diffuse.tga");
-            //render_model(he_model_loaded, texture, new Diffuse_Map_Shader(), zbuffer, image, Vec3f(0, 0, -1), Mode::TEXTURE);
             engine.render_shaded_model(he_model_loaded, new Diffuse_Map_Shader(shader_payload));
         }
         else if (std::string(argv[1]) == "shaded-wireframe")
         {
-            //render_model(he_model_loaded, TGAImage(), new Flat_Shader(), zbuffer, image, Vec3f(0, 0, -1), Mode::FLAT);
-            //draw_mesh_wireframe_dfs(he_model_loaded, image);
             engine.render_model_wireframe(he_model_loaded);
             engine.render_shaded_model(he_model_loaded, new Flat_Shader(shader_payload));
         }
         else if (std::string(argv[1]) == "uv")
         {
-            //render_model(he_model_loaded, TGAImage(), new UV_Shader(), zbuffer, image, Vec3f(0, 0, -1), Mode::UV);
             engine.render_shaded_model(he_model_loaded, new UV_Shader(shader_payload));
         }
         else

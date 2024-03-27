@@ -16,15 +16,11 @@ struct Shader_Global_Payload
 
 struct V2F
 {
-    // float light_intensity;
     Vec3f pos;
     Vec3f norm;
-    // Vec3f face_norm;
+    Vec3f face_norm;
     Vec2f tex_coord;
     Vec3i base_color;
-    // ec3f light_dir; //should be global
-
-    // TGAImage *texture;
     V2F() {}
     V2F(Vec3f pos_,
         Vec3f norm_, Vec2f tex_coord_,
