@@ -2,7 +2,7 @@
 
 class Flat_Shader : public Shader{
     public:
-    Flat_Shader(){ }
+    Flat_Shader(){}
     ~Flat_Shader(){ }
 
     virtual Vertex vertex_shader(const Vertex& vertex_input){
@@ -10,8 +10,8 @@ class Flat_Shader : public Shader{
         return vertex_input;
     }
 
-    virtual Vec3i fragment_shader(const Fragment_Shader_Payload& frag_data){
-        return frag_data.base_color * (frag_data.face_norm * frag_data.light_dir);
+    virtual Vec3i fragment_shader(const V2F& v2f){
+        return v2f.base_color * (v2f.face_norm * v2f.light_dir);
     }
     
 };

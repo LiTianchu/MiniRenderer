@@ -6,7 +6,13 @@
 #include "../he_model.h"
 #include <vector>
 
-struct Fragment_Shader_Payload
+struct Shader_Global_Payload{
+    Vec3f main_light_dir;
+    float main_light_intensity;
+    Vec3f camera_pos;
+};
+
+struct V2F
 {
     float light_intensity;
     Vec3f pos;
@@ -14,11 +20,11 @@ struct Fragment_Shader_Payload
     Vec3f face_norm;
     Vec2f tex_coord;
     Vec3i base_color;
-    Vec3f light_dir;
+    Vec3f light_dir; //should be global
 
     TGAImage *texture;
-    Fragment_Shader_Payload() {}
-    Fragment_Shader_Payload(float light_intensity_, Vec3f light_dir_, Vec3f pos_, 
+    V2F() {}
+    V2F(float light_intensity_, Vec3f light_dir_, Vec3f pos_, 
                                 Vec3f norm_, Vec3f face_norm_, Vec2f tex_coord_, 
                                 Vec3i color_, TGAImage *texture_) : 
                                                                     light_intensity(light_intensity_), light_dir(light_dir_), pos(pos_), 
@@ -26,19 +32,13 @@ struct Fragment_Shader_Payload
                                                                     base_color(color_), texture(texture_) {}
 };
 
-// class Vertex_Shader_Payload{
-//     private:
-//     Vertex vertex_input;
-//     public:
-// };
-
 class Shader
 {
 public:
-    Shader() {}
+    Shader(){}
     virtual ~Shader() {}
 
     virtual Vertex vertex_shader(const Vertex &vertex_input) = 0;
-    virtual Vec3i fragment_shader(const Fragment_Shader_Payload &processed_vertex) = 0;
+    virtual Vec3i fragment_shader(const V2F &processed_vertex) = 0;
 };
 #endif

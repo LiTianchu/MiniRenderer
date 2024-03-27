@@ -10,9 +10,9 @@ class UV_Shader : public Shader{
         return vertex_input;
     }
 
-    Vec3i fragment_shader(const Fragment_Shader_Payload& frag_data){
-        return Vec3i(frag_data.tex_coord.u*255, 
-                    frag_data.tex_coord.v*255, 
+    Vec3i fragment_shader(const V2F& v2f){
+        return Vec3i(v2f.tex_coord.u*255, 
+                    v2f.tex_coord.v*255, 
                     0);
     }
     

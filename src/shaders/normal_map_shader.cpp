@@ -10,12 +10,12 @@ class Normal_Map_Shader : public Shader{
         return vertex_input;
     }
 
-    Vec3i fragment_shader(const Fragment_Shader_Payload& frag_data){
-        TGAColor normal = frag_data.texture->get(frag_data.texture->get_width()*frag_data.tex_coord.u, 
-                                                        frag_data.texture->get_height()*(1.0-frag_data.tex_coord.v));
+    Vec3i fragment_shader(const V2F& v2f){
+        TGAColor normal = v2f.texture->get(v2f.texture->get_width()*v2f.tex_coord.u, 
+                                                        v2f.texture->get_height()*(1.0-v2f.tex_coord.v));
         Vec3f normal_vec = Vec3f(normal.r, normal.g, normal.b);
-        float frag_light_intensity = normal_vec * frag_data.light_dir;
-        Vec3i final_color = frag_data.base_color * frag_light_intensity;                         
+        float frag_light_intensity = normal_vec * v2f.light_dir;
+        Vec3i final_color = v2f.base_color * frag_light_intensity;                         
         return final_color;
     }
     
