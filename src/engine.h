@@ -41,7 +41,7 @@ public:
 
     void render_shaded_model(HEModel model, Shader *shader);
     void render_model_wireframe(HEModel model);
-    void rasterize_triangle(std::vector<Vertex> vertices, Shader *shader, V2F &v2f);
+    void rasterize_triangle(std::vector<V2F> vert_data, Shader *shader);
     void draw_line(int x0, int y0, int x1, int y1, TGAColor color);
     
 };

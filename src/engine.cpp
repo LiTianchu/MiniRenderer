@@ -1,5 +1,6 @@
 #include "engine.h"
 #include "math.h"
+#include <iostream>
 
 const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red = TGAColor(255, 0, 0, 255);
@@ -14,34 +15,37 @@ void Engine::render_shaded_model(HEModel model, Shader *shader)
         HEdge *h_edge = (*face_itr)->h; // optain the first half edge of the face
         // initialize the arrays to store vertex data
         std::vector<Vec3f> screen_coords;
-        std::vector<Vertex> processed_vertices;
+        std::vector<V2F> processed_vertices;
         int j = 0;
 
         do
         {
-            Vertex curr_vertex = shader->vertex_shader(*(h_edge->v));
+            Vertex *v = h_edge->v;
+            V2F processed_v = shader->vertex_shader(*v);
             //TODO: put all these into the vertex shader
-            Matrix curr_vertex_matrix = Matrix::vector2matrix(Vec4f(curr_vertex.pos.x, curr_vertex.pos.y, curr_vertex.pos.z, 1.0f));
+            Matrix processed_v_matrix = Matrix::vector2matrix(Vec4f(processed_v.pos.x, processed_v.pos.y, processed_v.pos.z, 1.0f));
             Matrix rotation_matrix = Matrix::rotation(0, 0, 0);
             Matrix translation_matrix = Matrix::translation(0.5, 0.5, 0);
             Matrix view_matrix = Matrix::model_view(camera_pos, Vec3f(0, 0, 0), Vec3f(0, 1, 0));
             Matrix projection_matrix = Matrix::persp_projection(camera_pos);
             Matrix viewport_matrix = Matrix::viewport(0, 0, frame_buffer->get_width(), frame_buffer->get_height(), 0, 1);
-            curr_vertex_matrix = (viewport_matrix * projection_matrix * view_matrix * rotation_matrix * curr_vertex_matrix).cartesian();
+            processed_v_matrix = (viewport_matrix * projection_matrix * view_matrix * rotation_matrix * processed_v_matrix).cartesian();
 
-            curr_vertex.pos = Vec3f(curr_vertex_matrix[0][0], curr_vertex_matrix[1][0], curr_vertex_matrix[2][0]);
+            processed_v.pos = Vec3f(processed_v_matrix[0][0], processed_v_matrix[1][0], processed_v_matrix[2][0]);
+            processed_v.norm = v->norm;
+            processed_v.tex_coord = v->tex_coord;
 
-            curr_vertex.pos_screen = Vec2f(curr_vertex_matrix[0][0], curr_vertex_matrix[1][0]);
-            curr_vertex.screen_z = curr_vertex_matrix[2][0];
-            processed_vertices.push_back(curr_vertex);
+            //processed_v.pos_screen = Vec2f(processed_v_matrix[0][0], processed_v_matrix[1][0]);
+            //processed_v.screen_z = processed_v_matrix[2][0];
+            processed_vertices.push_back(processed_v);
             h_edge = h_edge->next;
             j++;
         } while (h_edge != (*face_itr)->h);
-        Vec3f face_normal = Math::get_face_normal(processed_vertices);
-        V2F v2f = V2F(0, main_light_dir, Vec3f(0, 0, 0),
-                                                                    Vec3f(0, 0, 0), face_normal, Vec2f(0, 0),
-                                                                    TGAColor(255, 255, 255, 255).to_vec3(), model.get_diffuse_texture());
-        rasterize_triangle(processed_vertices, shader, v2f);
+        // Vec3f face_normal = Math::get_face_normal(processed_vertices);
+        // V2F v2f = V2F(0, main_light_dir, Vec3f(0, 0, 0),
+        //                                                             Vec3f(0, 0, 0), face_normal, Vec2f(0, 0),
+        //                                                             TGAColor(255, 255, 255, 255).to_vec3(), model.get_diffuse_texture());
+        rasterize_triangle(processed_vertices, shader);
     }
 }
 
@@ -76,7 +80,7 @@ void Engine::wireframe_dfs(const Face& f, bool (&faces_visited)[])
             Face neighbor_face = *pair->f;
             neighbor_faces.push_back(neighbor_face);
         }
-        
+
         // map the world coordinates to image coordinates
         int x0 = (pos_start.x + 1.0) / 2.0 * frame_buffer -> get_width();
         int y0 = (pos_start.y + 1.0) / 2.0 * frame_buffer -> get_height();
@@ -96,16 +100,16 @@ void Engine::wireframe_dfs(const Face& f, bool (&faces_visited)[])
     
 }
 
-void Engine::rasterize_triangle(std::vector<Vertex> vertices, Shader *shader, V2F &v2f)
+void Engine::rasterize_triangle(std::vector<V2F> vert_data, Shader *shader)
 {
-    // Vec3f face_normal = (vertices[2].pos - vertices[0].pos).cross(vertices[1].pos - vertices[0].pos);
+    // Vec3f face_normal = (vert_data[2].pos - vert_data[0].pos).cross(vert_data[1].pos - vert_data[0].pos);
     // face_normal.normalize();
 
     //  extract the vertex data
-    Vec2f pts[] = {vertices[0].pos_screen, vertices[1].pos_screen, vertices[2].pos_screen};
-    float z_indices[] = {vertices[0].screen_z, vertices[1].screen_z, vertices[2].screen_z};
-    Vec3f norms[] = {vertices[0].norm, vertices[1].norm, vertices[2].norm};
-    Vec2f tex_coords[] = {vertices[0].tex_coord, vertices[1].tex_coord, vertices[2].tex_coord};
+    Vec3f pts[] = {vert_data[0].pos, vert_data[1].pos, vert_data[2].pos};
+    float z_indices[] = {vert_data[0].pos.z, vert_data[1].pos.z, vert_data[2].pos.z};
+    Vec3f norms[] = {vert_data[0].norm, vert_data[1].norm, vert_data[2].norm};
+    Vec2f tex_coords[] = {vert_data[0].tex_coord, vert_data[1].tex_coord, vert_data[2].tex_coord};
 
     // obtain the bounding box cooridnates
     int x_min = std::min(pts[0].x, std::min(pts[1].x, pts[2].x));
@@ -124,7 +128,7 @@ void Engine::rasterize_triangle(std::vector<Vertex> vertices, Shader *shader, V2
     {
         for (int y = y_min; y <= y_max; y++)
         {
-
+            V2F interpolated_v2f;
             Vec3f b_coord = Math::get_barycentric(pts, Vec2i(x, y)); // calculate the barycentric coordinates
 
             if (b_coord.x < 0 || b_coord.y < 0 || b_coord.z < 0) // if any of the barycentric coordinates is negative, it is outside of triangle
@@ -138,18 +142,27 @@ void Engine::rasterize_triangle(std::vector<Vertex> vertices, Shader *shader, V2
             {
                 // interpolation stage
                 z_buffer[zbuffer_index] = interpolated_z; // update z buffer
+                interpolated_v2f.pos = Vec3f(x,y,interpolated_z);
                 
                 // TODO: interpolate from the v2f type
-                std::vector<float> I_at_vertices = {norms[0] * main_light_dir, norms[1] * main_light_dir, norms[2] * main_light_dir};
-                float interpolated_I = b_coord.x * I_at_vertices[0] + b_coord.y * I_at_vertices[1] + b_coord.z * I_at_vertices[2];
+                //std::vector<float> I_at_vertices = {norms[0] * main_light_dir, norms[1] * main_light_dir, norms[2] * main_light_dir};
+
+                Vec3 interpolated_norm = {b_coord.x * norms[0].x  + b_coord.y * norms[1].x + b_coord.z * norms[2].x,
+                                          b_coord.x * norms[0].y  + b_coord.y * norms[1].y + b_coord.z * norms[2].y,
+                                          b_coord.x * norms[0].z  + b_coord.y * norms[1].z + b_coord.z * norms[2].z};
+                interpolated_v2f.norm = interpolated_norm;
+                //std::cout << interpolated_norm << std::endl;
+
+                //float interpolated_I = b_coord.x * I_at_vertices[0] + b_coord.y * I_at_vertices[1] + b_coord.z * I_at_vertices[2];
                 float interpolated_u = b_coord.x * tex_coords[0].u + b_coord.y * tex_coords[1].u + b_coord.z * tex_coords[2].u;
                 float interpolated_v = b_coord.x * tex_coords[0].v + b_coord.y * tex_coords[1].v + b_coord.z * tex_coords[2].v;
                 
-                v2f.tex_coord = Vec2f(interpolated_u, interpolated_v);
-                v2f.light_intensity = interpolated_I * main_light_intensity;
+                interpolated_v2f.tex_coord = Vec2f(interpolated_u, interpolated_v);
+                interpolated_v2f.base_color = TGAColor(255, 255, 255, 255).to_vec3();
+                //v2f.light_intensity = interpolated_I * main_light_intensity;
                 // }
                 // obtain shaded color using shader
-                Vec3i color_vector = shader->fragment_shader(v2f);
+                Vec3i color_vector = shader->fragment_shader(interpolated_v2f);
                 TGAColor shade_color = TGAColor(color_vector);
                 frame_buffer->set(x, y, shade_color);
             }

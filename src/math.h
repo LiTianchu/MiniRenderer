@@ -4,7 +4,7 @@
 class Math
 {
 public:
-    static Vec3f get_barycentric(const Vec2f *pts, const Vec2i &P)
+    static Vec3f get_barycentric(const Vec3f *pts, const Vec2i &P)
     {
         //(ABx ACx PAx) X (ABy ACy PAy)
         Vec3f cross_product = Vec3f(pts[1].x - pts[0].x, pts[2].x - pts[0].x, pts[0].x - P.x).cross(Vec3f(pts[1].y - pts[0].y, pts[2].y - pts[0].y, pts[0].y - P.y)); // obtain (u*z, v*z, 1*z)
