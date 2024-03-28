@@ -12,6 +12,7 @@ struct Shader_Global_Payload
     float main_light_intensity;
     Vec3f camera_pos;
     TGAImage *texture;
+    Matrix *transform_matrix;
 };
 
 struct V2F

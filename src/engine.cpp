@@ -25,18 +25,6 @@ void Engine::render_shaded_model(HEModel model, Shader *shader)
             tri.push_back(*v);
 
             V2F processed_v = shader->vertex_shader(*v);
-            //TODO: put all these into the vertex shader
-            Matrix processed_v_matrix = Matrix::vector2matrix(Vec4f(processed_v.pos.x, processed_v.pos.y, processed_v.pos.z, 1.0f));
-            Matrix rotation_matrix = Matrix::rotation(0, 0, 0);
-            Matrix translation_matrix = Matrix::translation(0.5, 0.5, 0);
-            Matrix view_matrix = Matrix::model_view(camera_pos, Vec3f(0, 0, 0), Vec3f(0, 1, 0));
-            Matrix projection_matrix = Matrix::persp_projection(camera_pos);
-            Matrix viewport_matrix = Matrix::viewport(0, 0, frame_buffer->get_width(), frame_buffer->get_height(), 0, 1);
-            processed_v_matrix = (viewport_matrix * projection_matrix * view_matrix * rotation_matrix * processed_v_matrix).cartesian();
-
-            processed_v.pos = Vec3f(processed_v_matrix[0][0], processed_v_matrix[1][0], processed_v_matrix[2][0]);
-            processed_v.norm = v->norm;
-            processed_v.tex_coord = v->tex_coord;
 
             processed_vertices.push_back(processed_v);
             h_edge = h_edge->next;
@@ -66,7 +54,6 @@ void Engine::wireframe_dfs(const Face& f, bool (&faces_visited)[])
     }
     //draw the face
     HEdge *h_edge = f.h;
-    //std::cout << "drawing face with index: " << f.index << std::endl;
     std::vector<Face> neighbor_faces;
     do
     {
