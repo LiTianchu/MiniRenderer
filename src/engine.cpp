@@ -134,14 +134,14 @@ void Engine::rasterize_triangle(std::vector<V2F> vert_data, Shader *shader)
                 Vec3 interpolated_norm = {b_coord.x * norms[0].x  + b_coord.y * norms[1].x + b_coord.z * norms[2].x,
                                           b_coord.x * norms[0].y  + b_coord.y * norms[1].y + b_coord.z * norms[2].y,
                                           b_coord.x * norms[0].z  + b_coord.y * norms[1].z + b_coord.z * norms[2].z};
-                interpolated_v2f.norm = interpolated_norm;
+                interpolated_v2f.norm = interpolated_norm.normalize();
 
                 float interpolated_u = b_coord.x * tex_coords[0].u + b_coord.y * tex_coords[1].u + b_coord.z * tex_coords[2].u;
                 float interpolated_v = b_coord.x * tex_coords[0].v + b_coord.y * tex_coords[1].v + b_coord.z * tex_coords[2].v;
                 
                 interpolated_v2f.tex_coord = Vec2f(interpolated_u, interpolated_v);
                 interpolated_v2f.base_color = TGAColor(255, 255, 255, 255).to_vec3();
-                interpolated_v2f.face_norm = vert_data[0].face_norm;
+                interpolated_v2f.face_norm = vert_data[0].face_norm.normalize();
                 
                 // obtain shaded color using shader
                 Vec3i color_vector = shader->fragment_shader(interpolated_v2f);

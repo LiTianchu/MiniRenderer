@@ -5,13 +5,14 @@
 #include "../tgaimage.h"
 #include "../he_model.h"
 #include <vector>
+#include <algorithm>
 
 struct Shader_Global_Payload
 {
     Vec3f main_light_dir;
     float main_light_intensity;
     Vec3f camera_pos;
-    TGAImage *texture;
+    HEModel *model;
     Matrix *transform_matrix;
 };
 

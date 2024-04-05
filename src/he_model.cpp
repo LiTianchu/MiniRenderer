@@ -60,7 +60,7 @@ HEModel::HEModel(const char *filename) : h_edges(), faces(), vertices()
             iss >> norm.y;
             iss >> norm.z;
 
-            norm_list.push_back(norm.get_inverted());
+            norm_list.push_back(norm);
         }
         else if (!line.compare(0, 2, "f "))
         {

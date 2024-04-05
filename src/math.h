@@ -20,7 +20,7 @@ public:
 
     static Vec3f get_face_normal(const std::vector<Vertex> &vertices)
     {
-        Vec3f face_normal = (vertices[2].pos - vertices[0].pos).cross(vertices[1].pos - vertices[0].pos);
+        Vec3f face_normal = (vertices[0].pos - vertices[2].pos).cross(vertices[1].pos - vertices[2].pos);
         face_normal.normalize();
         return face_normal;
     }

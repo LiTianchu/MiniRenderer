@@ -8,13 +8,18 @@
 #include "shaders/gouraud_shader.cpp"
 #include "shaders/uv_shader.cpp"
 #include "shaders/diffuse_map_shader.cpp"
+#include "shaders/normal_map_shader.cpp"
 #include "engine.h"
 
 const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red = TGAColor(255, 0, 0, 255);
 const TGAColor green = TGAColor(0, 255, 0, 255);
 const TGAColor blue = TGAColor(0, 0, 255, 255);
-Vec3f camera_pos = Vec3f(0, 0, 3);
+Vec3f camera_pos = Vec3f(0, -1, 3);
+Vec3f light_dir = Vec3f(1, 1, 1).normalize();
+float main_light_intensity = 1.0f;
+Vec3f center_pos = Vec3f(0, 0, 0);
+Vec3f up_dir = Vec3f(0,1,0);
 
 enum Mode
 {
@@ -43,19 +48,17 @@ int main(int argc, char **argv)
         
         std::cout << "Rendering " << argv[1] << " model" << std::endl;
 
-        Vec3f main_light_dir = Vec3f(0, 0, -1);
-        float main_light_intensity = 1;
-        Engine engine = Engine(main_light_dir, main_light_intensity, camera_pos, zbuffer, &image);
+        Engine engine = Engine(light_dir, main_light_intensity, camera_pos, zbuffer, &image);
         
         Shader_Global_Payload shader_payload = Shader_Global_Payload();
-        shader_payload.main_light_dir = main_light_dir;
+        shader_payload.main_light_dir = light_dir;
         shader_payload.main_light_intensity = main_light_intensity;
         shader_payload.camera_pos = camera_pos;
-        shader_payload.texture = &diffuse_texture;
+        shader_payload.model = &he_model_loaded;
 
         Matrix rotation_matrix = Matrix::rotation(0, 0, 0);
         Matrix translation_matrix = Matrix::translation(0.5, 0.5, 0);
-        Matrix view_matrix = Matrix::model_view(camera_pos, Vec3f(0, 0, 0), Vec3f(0, 1, 0));
+        Matrix view_matrix = Matrix::model_view(camera_pos, center_pos, up_dir);
         Matrix projection_matrix = Matrix::persp_projection(camera_pos);
         Matrix viewport_matrix = Matrix::viewport(0, 0, image.get_width(), image.get_height(), 0, 1);
 
@@ -85,12 +88,15 @@ int main(int argc, char **argv)
         }
         else if (std::string(argv[1]) == "shaded-wireframe")
         {
-            engine.render_model_wireframe(he_model_loaded);
             engine.render_shaded_model(he_model_loaded, new Flat_Shader(shader_payload));
+            engine.render_model_wireframe(he_model_loaded);
         }
         else if (std::string(argv[1]) == "uv")
         {
             engine.render_shaded_model(he_model_loaded, new UV_Shader(shader_payload));
+        }
+        else if(std::string(argv[1]) == "normal"){
+            engine.render_shaded_model(he_model_loaded, new Normal_Map_Shader(shader_payload));
         }
         else
         {

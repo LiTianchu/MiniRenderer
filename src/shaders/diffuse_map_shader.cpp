@@ -17,8 +17,9 @@ class Diffuse_Map_Shader : public Shader{
     }
 
     virtual Vec3i fragment_shader(const V2F& v2f){
-        TGAColor tex_color = global_payload.texture->get(global_payload.texture->get_width()*v2f.tex_coord.u, 
-                                                        global_payload.texture->get_height()*(1.0-v2f.tex_coord.v));
+        TGAImage *texture = global_payload.model->get_diffuse_texture();
+        TGAColor tex_color = texture->get(texture->get_width()*v2f.tex_coord.u, 
+                                                        texture->get_height()*(1.0-v2f.tex_coord.v));
                                              
         return Vec3i(tex_color.r, 
                     tex_color.g, 

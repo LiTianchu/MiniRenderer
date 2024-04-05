@@ -17,7 +17,7 @@ class Gouraud_Shader : public Shader{
     }
 
     virtual Vec3i fragment_shader(const V2F& v2f){
-        float light_intensity = global_payload.main_light_dir * v2f.norm * global_payload.main_light_intensity;
+        float light_intensity = std::clamp(global_payload.main_light_dir * v2f.norm * global_payload.main_light_intensity, 0.0f, 1.0f);
         return Vec3i(v2f.base_color.x*light_intensity, 
                     v2f.base_color.y*light_intensity, 
                     v2f.base_color.z*light_intensity);

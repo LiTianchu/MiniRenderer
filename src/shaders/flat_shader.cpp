@@ -18,7 +18,7 @@ class Flat_Shader : public Shader{
 
     virtual Vec3i fragment_shader(const V2F& v2f){
         
-        Vec3i final_color = v2f.base_color * (v2f.face_norm * global_payload.main_light_dir * global_payload.main_light_intensity);
+        Vec3i final_color = v2f.base_color * std::clamp(v2f.face_norm * global_payload.main_light_dir * global_payload.main_light_intensity,0.0f,1.0f);
         //std::cout << "final_color: " << final_color << std::endl;
         return final_color;
     }

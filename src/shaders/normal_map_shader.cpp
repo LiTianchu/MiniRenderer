@@ -1,4 +1,5 @@
 #include "shader.h"
+#include <iostream>
 
 class Normal_Map_Shader : public Shader{
     public:
@@ -17,11 +18,19 @@ class Normal_Map_Shader : public Shader{
     }
 
     virtual Vec3i fragment_shader(const V2F& v2f){
-        TGAColor normal = global_payload.texture->get(global_payload.texture->get_width()*v2f.tex_coord.u, 
-                                                        global_payload.texture->get_height()*(1.0-v2f.tex_coord.v));
-        Vec3f normal_vec = Vec3f(normal.r, normal.g, normal.b);
-        //float frag_light_intensity = normal_vec ;
-        Vec3i final_color = v2f.base_color;                      
+        TGAImage* texture = global_payload.model->get_diffuse_texture();
+        TGAImage* normal_map = global_payload.model->get_normal_map_texture();
+        TGAColor normal = normal_map->get(normal_map->get_width()*v2f.tex_coord.u, 
+                                    normal_map->get_height()*(1.0-v2f.tex_coord.v));
+        TGAColor tex_color = texture->get(texture->get_width()*v2f.tex_coord.u, 
+                                    texture->get_height()*(1.0-v2f.tex_coord.v));
+        Vec3f normal_vec = Vec3f(normal.r, normal.g, normal.b).normalize()*2.0f - Vec3f(1.0f, 1.0f, 1.0f);
+        //std::cout << "normal_vec: " << normal_vec << std::endl;
+        float mapped_light_intensity = normal_vec * global_payload.main_light_dir * global_payload.main_light_intensity;
+        //std::cout << "mapped_light_intensity: " << mapped_light_intensity << std::endl;
+        mapped_light_intensity = std::clamp(mapped_light_intensity, 0.0f, 1.0f);
+        //std::cout << "clamped_light_intensity: " << mapped_light_intensity << std::endl;
+        Vec3i final_color = tex_color.to_vec3() * mapped_light_intensity;                      
         return final_color;
     }
     
