@@ -6,13 +6,19 @@
 #include <vector>
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct Vec{
-
+const int DEFAULT_VEC_LENGTH = 3;
+template <class T>
+struct Vec
+{	
+	// virtual functions
+	// virtual Vec<T> operator+(const Vec<T> &v) const = 0;
+	// virtual Vec<T> operator-(const Vec<T> &v) const = 0;
+	// virtual Vec<T> operator*(float f) const = 0;
+	// virtual T operator[](int i) const = 0;
 };
 
 template <class t>
-
-struct Vec2 : Vec
+struct Vec2 : Vec<t>
 {
 	union
 	{
@@ -41,7 +47,7 @@ struct Vec2 : Vec
 };
 
 template <class t>
-struct Vec3 : Vec
+struct Vec3 : Vec<t>
 {
 	union
 	{
@@ -81,7 +87,7 @@ struct Vec3 : Vec
 };
 
 template <class t>
-struct Vec4 : Vec
+struct Vec4 : Vec<t>
 {
 	union
 	{
@@ -281,6 +287,25 @@ public:
 		return det;
 	}
 
+	float cofactor(int i, int j) // get the cofactor value of a given coordinate
+	{
+		return ((i + j) % 2 == 0 ? 1 : -1) * submatrix(i, j).determinant();
+	}
+
+	Matrix adjugate() // cofactor matrix
+	{
+		assert(rows == cols);
+		Matrix result(rows, cols);
+		for (int i = 0; i < rows; i++)
+		{
+			for (int j = 0; j < cols; j++)
+			{
+				result[i][j] = cofactor(i, j);
+			}
+		}
+		return result;
+	}
+
 	std::pair<Matrix, bool> inverse()
 	{
 		assert(rows == cols);
@@ -290,48 +315,49 @@ public:
 			return std::pair(*this, false);
 		}
 		// augmenting the square matrix with the identity matrix of the same dimensions a => [ai]
-		Matrix result(rows, cols * 2);
-		for (int i = 0; i < rows; i++)
-			for (int j = 0; j < cols; j++)
-				result[i][j] = m[i][j];
-		for (int i = 0; i < rows; i++)
-			result[i][i + cols] = 1;
-		// first pass
-		for (int i = 0; i < rows - 1; i++)
-		{
-			// normalize the first row
-			for (int j = result.cols - 1; j >= 0; j--)
-				result[i][j] /= result[i][i];
-			for (int k = i + 1; k < rows; k++)
-			{
-				float coeff = result[k][i];
-				for (int j = 0; j < result.cols; j++)
-				{
-					result[k][j] -= result[i][j] * coeff;
-				}
-			}
-		}
-		// normalize the last row
-		for (int j = result.cols - 1; j >= rows - 1; j--)
-			result[rows - 1][j] /= result[rows - 1][rows - 1];
-		// second pass
-		for (int i = rows - 1; i > 0; i--)
-		{
-			for (int k = i - 1; k >= 0; k--)
-			{
-				float coeff = result[k][i];
-				for (int j = 0; j < result.cols; j++)
-				{
-					result[k][j] -= result[i][j] * coeff;
-				}
-			}
-		}
-		// cut the identity matrix back
-		Matrix truncate(rows, cols);
-		for (int i = 0; i < rows; i++)
-			for (int j = 0; j < cols; j++)
-				truncate[i][j] = result[i][j + cols];
-		return std::pair(truncate, true);
+		// Matrix result(rows, cols * 2);
+		// for (int i = 0; i < rows; i++)
+		// 	for (int j = 0; j < cols; j++)
+		// 		result[i][j] = m[i][j];
+		// for (int i = 0; i < rows; i++)
+		// 	result[i][i + cols] = 1;
+		// // first pass
+		// for (int i = 0; i < rows - 1; i++)
+		// {
+		// 	// normalize the first row
+		// 	for (int j = result.cols - 1; j >= 0; j--)
+		// 		result[i][j] /= result[i][i];
+		// 	for (int k = i + 1; k < rows; k++)
+		// 	{
+		// 		float coeff = result[k][i];
+		// 		for (int j = 0; j < result.cols; j++)
+		// 		{
+		// 			result[k][j] -= result[i][j] * coeff;
+		// 		}
+		// 	}
+		// }
+		// // normalize the last row
+		// for (int j = result.cols - 1; j >= rows - 1; j--)
+		// 	result[rows - 1][j] /= result[rows - 1][rows - 1];
+		// // second pass
+		// for (int i = rows - 1; i > 0; i--)
+		// {
+		// 	for (int k = i - 1; k >= 0; k--)
+		// 	{
+		// 		float coeff = result[k][i];
+		// 		for (int j = 0; j < result.cols; j++)
+		// 		{
+		// 			result[k][j] -= result[i][j] * coeff;
+		// 		}
+		// 	}
+		// }
+		// // cut the identity matrix back
+		// Matrix truncate(rows, cols);
+		// for (int i = 0; i < rows; i++)
+		// 	for (int j = 0; j < cols; j++)
+		// 		truncate[i][j] = result[i][j + cols];
+		// return std::pair(truncate, true);
+		return std::pair(adjugate().transpose() * (1.f/determinant()),true);
 	}; // returns the inverse of the matrix
 
 	Matrix homogeneous()
@@ -348,12 +374,14 @@ public:
 		return result;
 	}
 
-	Matrix cartesian(){
+	Matrix cartesian()
+	{
 		assert(cols == 1);
-		assert(rows >=2 && rows <= 4);
+		assert(rows >= 2 && rows <= 4);
 
 		Matrix result(rows - 1, cols);
-		for(int i = 0; i < rows - 1; i++){
+		for (int i = 0; i < rows - 1; i++)
+		{
 			result[i][0] = m[i][0] / m[rows - 1][0];
 		}
 		return result;
@@ -362,6 +390,18 @@ public:
 	std::pair<int, int> shape()
 	{
 		return std::pair(rows, cols);
+	}
+
+	std::pair<Matrix,bool> inverse_transpose()
+	{
+		assert(rows == cols);
+		// if the determinant is 0, then the matrix is not invertible
+		if (abs(determinant()) < std::numeric_limits<float>::epsilon())
+		{
+			return std::pair(*this, false);
+		}
+
+		return std::pair(adjugate() * (1.f/determinant()),true);
 	}
 
 	// returns a translation matrix
@@ -411,7 +451,8 @@ public:
 	}
 
 	// returns a model-view matrix
-	static Matrix model_view(Vec3f eye, Vec3f center, Vec3f up){
+	static Matrix model_view(Vec3f eye, Vec3f center, Vec3f up)
+	{
 		// translate e to origin
 		Matrix t_view = identity(4);
 		t_view[0][3] = -center.x;
@@ -425,7 +466,8 @@ public:
 		Vec3f z_dir = (eye - center).normalize();
 		Vec3f x_dir = (up.cross(z_dir)).normalize();
 		Vec3f y_dir = (z_dir.cross(x_dir)).normalize();
-		for(int i=0;i<3 ;i++){
+		for (int i = 0; i < 3; i++)
+		{
 			r_view[0][i] = x_dir[i];
 			r_view[1][i] = y_dir[i];
 			r_view[2][i] = z_dir[i];
@@ -433,7 +475,6 @@ public:
 
 		return r_view * t_view;
 	}
-
 
 	// returns a projection matrix
 	static Matrix persp_projection(const Vec3f &cameraPos)
@@ -444,27 +485,35 @@ public:
 	}
 
 	// maps the 3D coordinates to the into [x,x+w]*[y,y+h]*[n,f]
-	static Matrix viewport(int lowerleft_x, int lowerleft_y, int viewport_w, int viewport_h, float near, float far){
+	static Matrix viewport(int lowerleft_x, int lowerleft_y, int viewport_w, int viewport_h, float near, float far)
+	{
 		Matrix m = identity(4);
-		m[0][0] = viewport_w/2;
-		m[0][3] = lowerleft_x + viewport_w/2;
-		m[1][1] = viewport_h/2;
-		m[1][3] = lowerleft_y + viewport_h/2;
-		m[2][2] = (far - near)/2;
-		m[2][3] = (far + near)/2;
+		m[0][0] = viewport_w / 2;
+		m[0][3] = lowerleft_x + viewport_w / 2;
+		m[1][1] = viewport_h / 2;
+		m[1][3] = lowerleft_y + viewport_h / 2;
+		m[2][2] = (far - near) / 2;
+		m[2][3] = (far + near) / 2;
 		return m;
 	}
 
-	static Vec matrix2vector(const Matrix &m){
-		assert(m.rows >= 2 && m.rows <= 4); 
+	template <class T>
+	static Vec<T> matrix2vector(const Matrix &m)
+	{
+		assert(m.rows >= 2 && m.rows <= 4);
 		assert(m.cols == 1);
 
-		if(m.cols == 2){
-			return Vec2f(m[0][0], m[1][0]);
-		}else if(m.cols == 3){
-			return Vec3f(m[0][0], m[1][0], m[2][0]);
-		}else if(m.cols == 4){
-			return Vec4f(m[0][0], m[1][0], m[2][0], m[3][0]);
+		if (m.cols == 2)
+		{
+			return Vec2<T>(m[0][0], m[1][0]);
+		}
+		else if (m.cols == 3)
+		{
+			return Vec3<T>(m[0][0], m[1][0], m[2][0]);
+		}
+		else if (m.cols == 4)
+		{
+			return Vec4<T>(m[0][0], m[1][0], m[2][0], m[3][0]);
 		}
 	}
 

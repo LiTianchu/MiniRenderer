@@ -13,7 +13,13 @@ struct Shader_Global_Payload
     float main_light_intensity;
     Vec3f camera_pos;
     HEModel *model;
-    Matrix *transform_matrix;
+    Matrix transform_matrix;
+    Matrix view_proj_mat;
+    Matrix proj_correction_mat;
+    Matrix model_mat;
+    Matrix view_mat;
+    Matrix projection_mat;
+    Matrix viewport_mat;
 };
 
 struct V2F
