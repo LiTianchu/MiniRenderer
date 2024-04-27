@@ -50,5 +50,46 @@ public:
             return Vec3<t>(v.x, v.y, v.z);
         return Vec3<t>(v.x/v.w, v.y/v.w, v.z/v.w);
     }
+
+    template <typename t>
+    static Vec3<t> to_Vec3(const Matrix& m){
+        assert(m.nrows() >= 3 && m.ncols() == 1);
+        return Vec3<t>(m[0][0], m[1][0], m[2][0]);
+    }
+
+    template <typename t>
+    static Vec4<t> to_Vec4(const Matrix& m){
+        assert(m.nrows() == 4 && m.ncols() == 1);
+        return Vec4<t>(m[0][0], m[1][0], m[2][0], m[3][0]);
+    }
+
+    template <typename t>
+    static Matrix to_Matrix3(const Vec3<t>& v){
+        Matrix m(3, 1);
+        m[0][0] = v.x;
+        m[1][0] = v.y;
+        m[2][0] = v.z;
+        return m;
+    }
+
+    template <typename t>
+    static Matrix to_Matrix4(const Vec3<t>& v, float w = 1.0f){
+        Matrix m(4, 1);
+        m[0][0] = v.x;
+        m[1][0] = v.y;
+        m[2][0] = v.z;
+        m[3][0] = w;
+        return m;
+    }
+
+    template <typename t>
+    static Matrix to_Matrix4(const Vec4<t>& v){
+        Matrix m(4, 1);
+        m[0][0] = v.x;
+        m[1][0] = v.y;
+        m[2][0] = v.z;
+        m[3][0] = v.w;
+        return m;
+    }
 };
 #endif

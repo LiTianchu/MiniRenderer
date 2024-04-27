@@ -4,6 +4,7 @@
 #include "../geometry.h"
 #include "../tgaimage.h"
 #include "../he_model.h"
+#include "../math.h"
 #include <vector>
 #include <algorithm>
 

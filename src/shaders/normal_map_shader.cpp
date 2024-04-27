@@ -12,7 +12,8 @@ class Normal_Map_Shader : public Shader{
         Matrix v_m = Matrix::vector2matrix(Vec4f(vertex_input.pos.x, vertex_input.pos.y, vertex_input.pos.z, 1.0f));
         v_m = (global_payload.transform_matrix * v_m).cartesian();
         processed_v.pos = Vec3f(v_m[0][0], v_m[1][0], v_m[2][0]);
-        processed_v.norm = vertex_input.norm;
+        //processed_v.norm = vertex_input.norm;
+        processed_v.norm = Math::to_Vec3<float>(global_payload.proj_correction_mat * Math::to_Matrix4(vertex_input.norm, 0.0f));
         processed_v.tex_coord = vertex_input.tex_coord;
         return processed_v;
     }
