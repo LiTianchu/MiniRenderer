@@ -40,6 +40,7 @@ struct Vec2 : Vec<t>
 	bool operator!=(const Vec2<t> &V) const { return (u != V.u || v != V.v); }
 	bool operator<(const Vec2<t> &V) const { return (u < V.u && v < V.v); }
 	bool operator>(const Vec2<t> &V) const { return (u > V.u && v > V.v); }
+	float norm() const { return std::sqrt(u * u + v * v); }
 	template <class>
 	friend std::ostream &operator<<(std::ostream &s, Vec2<t> &v);
 };

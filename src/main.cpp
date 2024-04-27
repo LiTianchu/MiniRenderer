@@ -10,6 +10,7 @@
 #include "shaders/diffuse_map_shader.cpp"
 #include "shaders/normal_map_shader.cpp"
 #include "shaders/depth_shader.cpp"
+#include "shaders/empty_shader.cpp"
 #include "engine.h"
 
 const TGAColor white = TGAColor(255, 255, 255, 255);
@@ -18,14 +19,14 @@ const TGAColor green = TGAColor(0, 255, 0, 255);
 const TGAColor blue = TGAColor(0, 0, 255, 255);
 Vec3f camera_pos = Vec3f(1, 1, 3);
 Vec3f light_dir = Vec3f(1, 1, 1);
-//Vec3f light_pos = Vec3f(7, 2, 0);
+// Vec3f light_pos = Vec3f(7, 2, 0);
 float main_light_intensity = 2.0f;
 Vec3f center_pos = Vec3f(0, 0, 0);
 Vec3f up_dir = Vec3f(0, 1, 0);
 float far = 1;
 float near = 0;
-int img_w = 1920;
-int img_h = 1920;
+int img_w = 600;
+int img_h = 600;
 
 enum Mode
 {
@@ -45,10 +46,13 @@ int main(int argc, char **argv)
     if (argc >= 2)
     {
         HEModel he_model_loaded = HEModel("obj/african_head/african_head.obj");
+        //HEModel he_model_loaded = HEModel("obj/diablo3_pose/diablo3_pose.obj");
         TGAImage diffuse_texture = TGAImage();
         TGAImage normal_map = TGAImage();
         diffuse_texture.read_tga_file("obj/african_head/african_head_diffuse.tga");
         normal_map.read_tga_file("obj/african_head/african_head_nm.tga");
+        //diffuse_texture.read_tga_file("obj/diablo3_pose/diablo3_pose_diffuse.tga");
+        //normal_map.read_tga_file("obj/diablo3_pose/diablo3_pose_nm.tga");
         he_model_loaded.set_diffuse_texture(&diffuse_texture);
         he_model_loaded.set_normal_map_texture(&normal_map);
 
@@ -120,28 +124,57 @@ int main(int argc, char **argv)
         }
         else if (std::string(argv[1]) == "shadowmap")
         {
-            // all passes
+            // shadow mapping
+
             engine.render_shaded_model(he_model_loaded, new Normal_Map_Shader(shader_payload), &image);
-            engine.reset_zbuffer();
+            engine.reset_zbuffer(img_w, img_h);
             // shadow mapping first pass
             Shader_Global_Payload shadow_payload = Shader_Global_Payload();
-            Matrix shadow_view = Matrix::model_view(light_dir, center_pos, up_dir);
-            //Matrix shadow_proj = Matrix::persp_projection(light_dir);
+            Matrix shadow_view = Matrix::model_view(light_dir, center_pos, up_dir); // take the depth buffer from the light position
+            // Matrix shadow_proj = Matrix::persp_projection(light_dir);
             Matrix shadow_viewport = Matrix::viewport(0, 0, img_w, img_h, near, far);
             Matrix shadow_transform = shadow_viewport * shadow_view;
             shadow_payload.transform_matrix = shadow_transform;
             shadow_payload.zDepth = far - near;
-
             // render shadow buffer
             TGAImage shadow_buffer = TGAImage(image.get_width(), image.get_height(), TGAImage::RGB);
             engine.render_shaded_model(he_model_loaded, new Depth_Shader(shadow_payload), &shadow_buffer);
-            engine.reset_zbuffer();
-            //std::cout << "Argument is not valid" << std::endl;
+            engine.reset_zbuffer(img_w, img_h);
+
+            // shadow mapping second pass
             Matrix screen_shadow_mat = shadow_transform * shader_payload.transform_matrix.inverse().first;
             shader_payload.screen_shadow_mat = screen_shadow_mat;
             shader_payload.shadow_buffer = &shadow_buffer;
             engine.render_shaded_model(he_model_loaded, new Normal_Map_Shader(shader_payload), &image);
-            //image = shadow_buffer;
+            // image = shadow_buffer;
+        }
+        else if (std::string(argv[1]) == "ssao")
+        {
+            // screen space ambient occlusion
+            engine.render_shaded_model(he_model_loaded, new Empty_Shader(shader_payload), &image);
+            // keep the z buffer
+
+            int count = 0;
+            int max_count = img_h * img_w;
+            // generate ssao
+            for (int x = 0; x < img_w; x++)
+            {
+                for (int y = 0; y < img_h; y++)
+                {   
+                    count++;
+                    std::cout << "SSAO: " << count << "/" << max_count << std::endl;       
+                    if(zbuffer[x+y*img_w] < std::numeric_limits<float>::epsilon()) continue;
+                    float total = 0;
+                    for (float a=0;a<M_PI*2-1e-4;a+=M_PI/4){
+                        total += M_PI/2 - Math::max_elevation_angle(zbuffer, Vec2f(x,y), Vec2f(cos(a),sin(a)), 1000.f, img_w, img_h);
+
+                    }
+                    total /= (M_PI/2) * 8;
+                    total = pow(total, 100.f);
+                    total = std::clamp(total, 0.f, 1.f);
+                    image.set(x, y, TGAColor(total*255, total*255, total*255, 255));
+                }   
+            }
         }
     }
     else

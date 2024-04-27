@@ -39,10 +39,10 @@ public:
         return data;
     }
 
-    void reset_zbuffer()
+    void reset_zbuffer(int width, int height)
     {
         delete z_buffer;
-        z_buffer = new float[1920 * 1920];
+        z_buffer = new float[width * height];
     }
 
     void render_shaded_model(HEModel model, Shader *shader, TGAImage *frame_buffer);

@@ -91,5 +91,24 @@ public:
         m[3][0] = v.w;
         return m;
     }
+
+    static float max_elevation_angle(float *zbuffer, Vec2f p, Vec2f dir, float reach, int width, int height){
+        float maxangle = 0;
+        for(float t=0. ; t<reach ; t+=.1){
+            Vec2f cur_pos = p + dir * t;
+            // check if the point is inside the screen
+            if(cur_pos.x>=width || cur_pos.y>=height || cur_pos.x<0 || cur_pos.y<0) return maxangle;
+            float distance = (p-cur_pos).norm(); // magnitude distance to the initial point
+            if (distance < 1.0f) continue; // check if the distance is at least 1 pixel
+
+            //calclate elevation angle
+            int cur_z_idx = int(cur_pos.x) + int(cur_pos.y) * width;
+            int p_z_idx = int(p.x) + int(p.y) * width;
+            float elevation = zbuffer[cur_z_idx] - zbuffer[p_z_idx];
+
+            maxangle = std::max(maxangle, atanf(elevation/distance));
+        }
+        return maxangle;
+    }
 };
 #endif
