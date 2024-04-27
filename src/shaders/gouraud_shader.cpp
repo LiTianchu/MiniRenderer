@@ -4,7 +4,7 @@ class Gouraud_Shader : public Shader{
     public:
     Gouraud_Shader(){ }
     Gouraud_Shader(Shader_Global_Payload& payload) : Shader(payload){ }
-    ~Gouraud_Shader(){ }
+    ~Gouraud_Shader() = default;
 
     virtual V2F vertex_shader(const Vertex& vertex_input){
         V2F processed_v;

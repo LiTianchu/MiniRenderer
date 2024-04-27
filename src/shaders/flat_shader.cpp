@@ -5,7 +5,7 @@ class Flat_Shader : public Shader
 public:
     Flat_Shader() {}
     Flat_Shader(Shader_Global_Payload &payload) : Shader(payload) {}
-    ~Flat_Shader() {}
+    ~Flat_Shader() = default;
 
     virtual V2F vertex_shader(const Vertex &vertex_input)
     {

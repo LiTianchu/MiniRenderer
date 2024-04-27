@@ -4,7 +4,7 @@ class Diffuse_Map_Shader : public Shader{
     public:
         Diffuse_Map_Shader(){ }
         Diffuse_Map_Shader(Shader_Global_Payload& payload) : Shader(payload){ }
-        ~Diffuse_Map_Shader(){ }
+        ~Diffuse_Map_Shader() = default;
 
     virtual V2F vertex_shader(const Vertex& vertex_input){
         V2F processed_v;

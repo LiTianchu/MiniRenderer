@@ -21,6 +21,7 @@ struct Shader_Global_Payload
     Matrix view_mat;
     Matrix projection_mat;
     Matrix viewport_mat;
+    float zDepth;
 };
 
 struct V2F

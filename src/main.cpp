@@ -9,6 +9,7 @@
 #include "shaders/uv_shader.cpp"
 #include "shaders/diffuse_map_shader.cpp"
 #include "shaders/normal_map_shader.cpp"
+#include "shaders/depth_shader.cpp"
 #include "engine.h"
 
 const TGAColor white = TGAColor(255, 255, 255, 255);
@@ -20,6 +21,8 @@ Vec3f light_dir = Vec3f(1, -1, 1).normalize();
 float main_light_intensity = 2.0f;
 Vec3f center_pos = Vec3f(0, 0, 0);
 Vec3f up_dir = Vec3f(0,1,0);
+float far = 1;
+float near = 0;
 
 enum Mode
 {
@@ -55,6 +58,7 @@ int main(int argc, char **argv)
         shader_payload.main_light_intensity = main_light_intensity;
         shader_payload.camera_pos = camera_pos;
         shader_payload.model = &he_model_loaded;
+        shader_payload.zDepth = far - near;
 
         // transformation matrices
         Matrix rotation_matrix = Matrix::rotation(0, 0, 0);
@@ -63,7 +67,7 @@ int main(int argc, char **argv)
         Matrix composite_linear_transform_mat = translation_matrix * rotation_matrix * scaling_matrix;
         Matrix view_matrix = Matrix::model_view(camera_pos, center_pos, up_dir);
         Matrix projection_matrix = Matrix::persp_projection(camera_pos);
-        Matrix viewport_matrix = Matrix::viewport(0, 0, image.get_width(), image.get_height(), 0, 1);
+        Matrix viewport_matrix = Matrix::viewport(0, 0, image.get_width(), image.get_height(), near, far);
 
         // store transform matrices for shader
         Matrix transform_matrix = viewport_matrix * projection_matrix * view_matrix * composite_linear_transform_mat;
@@ -107,6 +111,9 @@ int main(int argc, char **argv)
         }
         else if(std::string(argv[1]) == "normal"){
             engine.render_shaded_model(he_model_loaded, new Normal_Map_Shader(shader_payload));
+        }
+        else if(std::string(argv[1]) == "depth"){
+            engine.render_shaded_model(he_model_loaded, new Depth_Shader(shader_payload));
         }
         else
         {
