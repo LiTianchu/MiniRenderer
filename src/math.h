@@ -1,3 +1,5 @@
+#ifndef __MATH_H__
+#define __MATH_H__
 #include "geometry.h"
 #include "he_Model.h"
 
@@ -24,4 +26,29 @@ public:
         face_normal.normalize();
         return face_normal;
     }
+
+    template <typename t>
+    static Vec3<t> get_homogeneous(const Vec2<t>& v){
+        return Vec3<t>(v.x, v.y, 1.0f);
+    }
+
+    template <typename t>
+    static Vec4<t> get_homogeneous(const Vec3<t>& v){
+        return Vec4<t>(v.x, v.y, v.z, 1.0f);
+    }
+
+    template <typename t>
+    static Vec2<t> get_cartesian(const Vec3<t>& v){
+        if(v.z == 0)
+            return Vec2<t>(v.x, v.y);
+        return Vec2<t>(v.x/v.z, v.y/v.z);
+    }
+
+    template <typename t>
+    static Vec3<t> get_cartesian(const Vec4<t>& v){
+        if(v.w == 0)
+            return Vec3<t>(v.x, v.y, v.z);
+        return Vec3<t>(v.x/v.w, v.y/v.w, v.z/v.w);
+    }
 };
+#endif

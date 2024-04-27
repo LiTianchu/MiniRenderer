@@ -4,17 +4,14 @@
 #include <cmath>
 #include <cassert>
 #include <vector>
+#include <iostream>
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 const int DEFAULT_VEC_LENGTH = 3;
 template <class T>
-struct Vec
-{	
-	// virtual functions
-	// virtual Vec<T> operator+(const Vec<T> &v) const = 0;
-	// virtual Vec<T> operator-(const Vec<T> &v) const = 0;
-	// virtual Vec<T> operator*(float f) const = 0;
-	// virtual T operator[](int i) const = 0;
+struct Vec // abstract class for vector types
+{
 };
 
 template <class t>
@@ -34,14 +31,15 @@ struct Vec2 : Vec<t>
 	};
 	Vec2() : u(0), v(0) {}
 	Vec2(t _u, t _v) : u(_u), v(_v) {}
-	inline Vec2<t> operator+(const Vec2<t> &V) const { return Vec2<t>(u + V.u, v + V.v); }
-	inline Vec2<t> operator-(const Vec2<t> &V) const { return Vec2<t>(u - V.u, v - V.v); }
-	inline Vec2<t> operator*(float f) const { return Vec2<t>(u * f, v * f); }
-	inline t operator[](int i) const { return raw[i]; }
-	inline bool operator==(const Vec2<t> &V) const { return (u == V.u && v == V.v); }
-	inline bool operator!=(const Vec2<t> &V) const { return (u != V.u || v != V.v); }
-	inline bool operator<(const Vec2<t> &V) const { return (u < V.u && v < V.v); }
-	inline bool operator>(const Vec2<t> &V) const { return (u > V.u && v > V.v); }
+	t operator[](int i) const { return raw[i]; }
+	// operators with another vector
+	Vec2<t> operator+(const Vec2<t> &V) const { return Vec2<t>(u + V.u, v + V.v); }
+	Vec2<t> operator-(const Vec2<t> &V) const { return Vec2<t>(u - V.u, v - V.v); }
+	Vec2<t> operator*(float f) const { return Vec2<t>(u * f, v * f); }
+	bool operator==(const Vec2<t> &V) const { return (u == V.u && v == V.v); }
+	bool operator!=(const Vec2<t> &V) const { return (u != V.u || v != V.v); }
+	bool operator<(const Vec2<t> &V) const { return (u < V.u && v < V.v); }
+	bool operator>(const Vec2<t> &V) const { return (u > V.u && v > V.v); }
 	template <class>
 	friend std::ostream &operator<<(std::ostream &s, Vec2<t> &v);
 };
@@ -63,16 +61,16 @@ struct Vec3 : Vec<t>
 	};
 	Vec3() : x(0), y(0), z(0) {}
 	Vec3(t _x, t _y, t _z) : x(_x), y(_y), z(_z) {}
-	inline Vec3<t> operator^(const Vec3<t> &v) const { return Vec3<t>(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x); } // cross product operator
-	inline Vec3<t> operator+(const Vec3<t> &v) const { return Vec3<t>(x + v.x, y + v.y, z + v.z); }
-	inline Vec3<t> operator-(const Vec3<t> &v) const { return Vec3<t>(x - v.x, y - v.y, z - v.z); }
-	inline Vec3<t> operator*(float f) const { return Vec3<t>(x * f, y * f, z * f); } // dot product operator
-	inline t operator*(const Vec3<t> &v) const { return x * v.x + y * v.y + z * v.z; }
-	inline t operator[](const int i) const { return raw[i]; }
-	inline bool operator==(const Vec3<t> &v) const { return x == v.x && y == v.y && z == v.z; }
-	inline bool operator!=(const Vec3<t> &v) const { return x != v.x || y != v.y || z != v.z; }
-	inline bool operator<(const Vec3<t> &v) const { return x < v.x && y < v.y && z < v.z; }
-	inline bool operator>(const Vec3<t> &v) const { return x > v.x && y > v.y && z > v.z; }
+	Vec3<t> operator^(const Vec3<t> &v) const { return Vec3<t>(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x); } // cross product operator
+	Vec3<t> operator+(const Vec3<t> &v) const { return Vec3<t>(x + v.x, y + v.y, z + v.z); }
+	Vec3<t> operator-(const Vec3<t> &v) const { return Vec3<t>(x - v.x, y - v.y, z - v.z); }
+	Vec3<t> operator*(float f) const { return Vec3<t>(x * f, y * f, z * f); } // dot product operator
+	t operator*(const Vec3<t> &v) const { return x * v.x + y * v.y + z * v.z; }
+	t operator[](const int i) const { return raw[i]; }
+	bool operator==(const Vec3<t> &v) const { return x == v.x && y == v.y && z == v.z; }
+	bool operator!=(const Vec3<t> &v) const { return x != v.x || y != v.y || z != v.z; }
+	bool operator<(const Vec3<t> &v) const { return x < v.x && y < v.y && z < v.z; }
+	bool operator>(const Vec3<t> &v) const { return x > v.x && y > v.y && z > v.z; }
 	float norm() const { return std::sqrt(x * x + y * y + z * z); }
 	Vec3<t> cross(Vec3<t> other) const { return Vec3<t>{y * other.z - z * other.y, -(x * other.z - z * other.x), x * other.y - y * other.x}; }
 	Vec3<t> dot(Vec3<t> other) const { return Vec3<t>{x * other.x, y * other.y, z * other.z}; }
@@ -99,16 +97,16 @@ struct Vec4 : Vec<t>
 	};
 	Vec4() : x(0), y(0), z(0), w(0) {}
 	Vec4(t _x, t _y, t _z, t _w) : x(_x), y(_y), z(_z), w(_w) {}
-	// inline Vec3<t> operator^(const Vec3<t> &v) const { return Vec3<t>(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x); } // cross product operator
-	inline Vec4<t> operator+(const Vec4<t> &v) const { return Vec4<t>(x + v.x, y + v.y, z + v.z, w + v.w); }
-	inline Vec4<t> operator-(const Vec4<t> &v) const { return Vec4<t>(x - v.x, y - v.y, z - v.z, w - v.w); }
-	inline Vec4<t> operator*(float f) const { return Vec4<t>(x * f, y * f, z * f, w * f); } // dot product operator
-	inline t operator*(const Vec4<t> &v) const { return x * v.x + y * v.y + z * v.z + w * v.w; }
-	inline t operator[](const int i) const { return raw[i]; }
-	inline bool operator==(const Vec4<t> &v) const { return x == v.x && y == v.y && z == v.z && w == v.w; }
-	inline bool operator!=(const Vec4<t> &v) const { return x != v.x || y != v.y || z != v.z || w != v.w; }
-	inline bool operator<(const Vec4<t> &v) const { return x < v.x && y < v.y && z < v.z && w < v.w; }
-	inline bool operator>(const Vec4<t> &v) const { return x > v.x && y > v.y && z > v.z && w > v.w; }
+	// Vec3<t> operator^(const Vec3<t> &v) const { return Vec3<t>(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x); } // cross product operator
+	Vec4<t> operator+(const Vec4<t> &v) const { return Vec4<t>(x + v.x, y + v.y, z + v.z, w + v.w); }
+	Vec4<t> operator-(const Vec4<t> &v) const { return Vec4<t>(x - v.x, y - v.y, z - v.z, w - v.w); }
+	Vec4<t> operator*(float f) const { return Vec4<t>(x * f, y * f, z * f, w * f); } // dot product operator
+	t operator*(const Vec4<t> &v) const { return x * v.x + y * v.y + z * v.z + w * v.w; }
+	t operator[](const int i) const { return raw[i]; }
+	bool operator==(const Vec4<t> &v) const { return x == v.x && y == v.y && z == v.z && w == v.w; }
+	bool operator!=(const Vec4<t> &v) const { return x != v.x || y != v.y || z != v.z || w != v.w; }
+	bool operator<(const Vec4<t> &v) const { return x < v.x && y < v.y && z < v.z && w < v.w; }
+	bool operator>(const Vec4<t> &v) const { return x > v.x && y > v.y && z > v.z && w > v.w; }
 	float norm() const { return std::sqrt(x * x + y * y + z * z + w * w); }
 	// Vec3<t> cross(Vec3<t> other) const { return Vec3<t>{y * other.z - z * other.y, -(x * other.z - z * other.x), x * other.y - y * other.x}; }
 	Vec4<t> dot(Vec4<t> other) const { return Vec4<t>{x * other.x, y * other.y, z * other.z, w * other.w}; }
@@ -162,7 +160,7 @@ private:
 public:
 	Matrix(int r = DEFAULT_ALLOC, int c = DEFAULT_ALLOC) : m(std::vector<std::vector<float>>(r, std::vector<float>(c, 0.f))), rows(r), cols(c){};
 	int nrows() { return rows; };
-	inline int ncols() { return cols; };
+	int ncols() { return cols; };
 	static Matrix identity(int dimensions)
 	{ // creates an identity matrix of the given dimensions
 		Matrix E(dimensions, dimensions);
@@ -193,6 +191,7 @@ public:
 
 	Matrix operator*(const Matrix &other)
 	{ // matrix multiplication
+	
 		assert(cols == other.rows);
 		Matrix result(rows, other.cols);
 		for (int i = 0; i < rows; i++)
@@ -208,6 +207,18 @@ public:
 		}
 		return result;
 	};
+
+	Matrix operator*(float factor){
+		Matrix result(rows, cols);
+		for (int i = 0; i < rows; i++)
+		{
+			for (int j = 0; j < cols; j++)
+			{
+				result[i][j] = m[i][j] * factor;
+			}
+		}
+		return result;
+	}
 
 	Matrix operator+(const Matrix &other)
 	{
@@ -357,7 +368,7 @@ public:
 		// 	for (int j = 0; j < cols; j++)
 		// 		truncate[i][j] = result[i][j + cols];
 		// return std::pair(truncate, true);
-		return std::pair(adjugate().transpose() * (1.f/determinant()),true);
+		return std::pair(adjugate().transpose() * (1.f / determinant()), true);
 	}; // returns the inverse of the matrix
 
 	Matrix homogeneous()
@@ -378,11 +389,18 @@ public:
 	{
 		assert(cols == 1);
 		assert(rows >= 2 && rows <= 4);
-
 		Matrix result(rows - 1, cols);
+
 		for (int i = 0; i < rows - 1; i++)
 		{
-			result[i][0] = m[i][0] / m[rows - 1][0];
+			if (m[rows - 1][0] == 0)
+			{
+				result[i][0] = m[i][0]; // copy the vector
+			}
+			else
+			{
+				result[i][0] = m[i][0] / m[rows - 1][0];
+			}
 		}
 		return result;
 	}
@@ -392,7 +410,7 @@ public:
 		return std::pair(rows, cols);
 	}
 
-	std::pair<Matrix,bool> inverse_transpose()
+	std::pair<Matrix, bool> inverse_transpose()
 	{
 		assert(rows == cols);
 		// if the determinant is 0, then the matrix is not invertible
@@ -400,8 +418,9 @@ public:
 		{
 			return std::pair(*this, false);
 		}
-
-		return std::pair(adjugate() * (1.f/determinant()),true);
+		float inv_det = 1.f / determinant();
+		Matrix adj = adjugate();
+		return std::pair(adj * inv_det, true);
 	}
 
 	// returns a translation matrix
@@ -497,26 +516,6 @@ public:
 		return m;
 	}
 
-	template <class T>
-	static Vec<T> matrix2vector(const Matrix &m)
-	{
-		assert(m.rows >= 2 && m.rows <= 4);
-		assert(m.cols == 1);
-
-		if (m.cols == 2)
-		{
-			return Vec2<T>(m[0][0], m[1][0]);
-		}
-		else if (m.cols == 3)
-		{
-			return Vec3<T>(m[0][0], m[1][0], m[2][0]);
-		}
-		else if (m.cols == 4)
-		{
-			return Vec4<T>(m[0][0], m[1][0], m[2][0], m[3][0]);
-		}
-	}
-
 	// returns a matrix from a vector 2
 	static Matrix vector2matrix(const Vec2f &v)
 	{
@@ -545,6 +544,25 @@ public:
 		m[2][0] = v.z;
 		m[3][0] = v.w;
 		return m;
+	}
+	template <class VectorType>
+	static VectorType matrix2vector(const Matrix &m)
+	{
+		assert(m.rows >= 2 && m.rows <= 4);
+		assert(m.cols == 1);
+
+		if (m.cols == 2)
+		{
+			return VectorType(m[0][0], m[1][0]);
+		}
+		else if (m.cols == 3)
+		{
+			return VectorType(m[0][0], m[1][0], m[2][0]);
+		}
+		else if (m.cols == 4)
+		{
+			return VectorType(m[0][0], m[1][0], m[2][0], m[3][0]);
+		}
 	}
 
 	// operator overloading for printing

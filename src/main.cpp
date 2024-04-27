@@ -59,7 +59,7 @@ int main(int argc, char **argv)
         // transformation matrices
         Matrix rotation_matrix = Matrix::rotation(0, 0, 0);
         Matrix translation_matrix = Matrix::translation(0, 0, 0);
-        Matrix scaling_matrix = Matrix::scaling(0, 0, 0);
+        Matrix scaling_matrix = Matrix::scaling(1, 1, 1);
         Matrix composite_linear_transform_mat = translation_matrix * rotation_matrix * scaling_matrix;
         Matrix view_matrix = Matrix::model_view(camera_pos, center_pos, up_dir);
         Matrix projection_matrix = Matrix::persp_projection(camera_pos);
