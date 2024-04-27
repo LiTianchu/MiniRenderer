@@ -65,6 +65,7 @@ struct Vec3 : Vec<t>
 	Vec3<t> operator+(const Vec3<t> &v) const { return Vec3<t>(x + v.x, y + v.y, z + v.z); }
 	Vec3<t> operator-(const Vec3<t> &v) const { return Vec3<t>(x - v.x, y - v.y, z - v.z); }
 	Vec3<t> operator*(float f) const { return Vec3<t>(x * f, y * f, z * f); } // dot product operator
+	Vec3<t> operator/(float f) const { return Vec3<t>(x / f, y / f, z / f); }
 	t operator*(const Vec3<t> &v) const { return x * v.x + y * v.y + z * v.z; }
 	t operator[](const int i) const { return raw[i]; }
 	bool operator==(const Vec3<t> &v) const { return x == v.x && y == v.y && z == v.z; }
@@ -101,6 +102,7 @@ struct Vec4 : Vec<t>
 	Vec4<t> operator+(const Vec4<t> &v) const { return Vec4<t>(x + v.x, y + v.y, z + v.z, w + v.w); }
 	Vec4<t> operator-(const Vec4<t> &v) const { return Vec4<t>(x - v.x, y - v.y, z - v.z, w - v.w); }
 	Vec4<t> operator*(float f) const { return Vec4<t>(x * f, y * f, z * f, w * f); } // dot product operator
+	Vec4<t> operator/(float f) const { return Vec4<t>(x / f, y / f, z / f, w / f); }
 	t operator*(const Vec4<t> &v) const { return x * v.x + y * v.y + z * v.z + w * v.w; }
 	t operator[](const int i) const { return raw[i]; }
 	bool operator==(const Vec4<t> &v) const { return x == v.x && y == v.y && z == v.z && w == v.w; }
@@ -189,9 +191,9 @@ public:
 		return m[i];
 	};
 
-	Matrix operator*(const Matrix &other)
+	Matrix operator*(const Matrix &other) const
 	{ // matrix multiplication
-	
+
 		assert(cols == other.rows);
 		Matrix result(rows, other.cols);
 		for (int i = 0; i < rows; i++)
@@ -208,7 +210,8 @@ public:
 		return result;
 	};
 
-	Matrix operator*(float factor){
+	Matrix operator*(float factor) const
+	{
 		Matrix result(rows, cols);
 		for (int i = 0; i < rows; i++)
 		{
@@ -220,7 +223,21 @@ public:
 		return result;
 	}
 
-	Matrix operator+(const Matrix &other)
+	Matrix operator/(float divisor) const
+	{
+		assert(divisor != 0);
+		Matrix result(rows, cols);
+		for (int i = 0; i < rows; i++)
+		{
+			for (int j = 0; j < cols; j++)
+			{
+				result[i][j] = m[i][j] / divisor;
+			}
+		}
+		return result;
+	}
+
+	Matrix operator+(const Matrix &other) const
 	{
 		assert(cols == other.cols && rows == other.rows);
 		Matrix result(rows, cols);
@@ -234,7 +251,7 @@ public:
 		return result;
 	}
 
-	Matrix transpose() // returns the transpose of the matrix
+	Matrix transpose() const // returns the transpose of the matrix
 	{
 		Matrix result(cols, rows);
 		for (int i = 0; i < rows; i++)
@@ -243,7 +260,7 @@ public:
 		return result;
 	};
 
-	Matrix submatrix(int exclude_row, int exclude_col)
+	Matrix submatrix(int exclude_row, int exclude_col) const
 	{
 		assert(exclude_row >= 0 && exclude_row < rows);
 		assert(exclude_col >= 0 && exclude_col < cols);
@@ -270,7 +287,7 @@ public:
 		return result;
 	}
 
-	float determinant()
+	float determinant() const
 	{
 		assert(rows == cols);
 		if (rows == 1)
@@ -298,12 +315,12 @@ public:
 		return det;
 	}
 
-	float cofactor(int i, int j) // get the cofactor value of a given coordinate
+	float cofactor(int i, int j) const // get the cofactor value of a given coordinate
 	{
 		return ((i + j) % 2 == 0 ? 1 : -1) * submatrix(i, j).determinant();
 	}
 
-	Matrix adjugate() // cofactor matrix
+	Matrix adjugate() const // cofactor matrix
 	{
 		assert(rows == cols);
 		Matrix result(rows, cols);
@@ -317,7 +334,7 @@ public:
 		return result;
 	}
 
-	std::pair<Matrix, bool> inverse()
+	std::pair<Matrix, bool> inverse() const
 	{
 		assert(rows == cols);
 		// if the determinant is 0, then the matrix is not invertible
@@ -368,10 +385,10 @@ public:
 			for (int j = 0; j < cols; j++)
 				truncate[i][j] = result[i][j + cols];
 		return std::pair(truncate, true);
-		//return std::pair(adjugate().transpose() * (1.f / determinant()), true);
+		// return std::pair(adjugate().transpose() * (1.f / determinant()), true);
 	}; // returns the inverse of the matrix
 
-	Matrix homogeneous()
+	Matrix homogeneous() const
 	{
 		Matrix result(nrows() + 1, ncols() + 1);
 		for (int i = 0; i < nrows(); i++)
@@ -385,7 +402,7 @@ public:
 		return result;
 	}
 
-	Matrix cartesian()
+	Matrix cartesian() const
 	{
 		assert(cols == 1);
 		assert(rows >= 2 && rows <= 4);
@@ -405,12 +422,12 @@ public:
 		return result;
 	}
 
-	std::pair<int, int> shape()
+	std::pair<int, int> shape() const
 	{
 		return std::pair(rows, cols);
 	}
 
-	std::pair<Matrix, bool> inverse_transpose()
+	std::pair<Matrix, bool> inverse_transpose() const
 	{
 		assert(rows == cols);
 		// if the determinant is 0, then the matrix is not invertible
@@ -418,8 +435,8 @@ public:
 		{
 			return std::pair(*this, false);
 		}
-		//float inv_det = 1.f / determinant();
-		//Matrix adj = adjugate();
+		// float inv_det = 1.f / determinant();
+		// Matrix adj = adjugate();
 		return std::pair(inverse().first.transpose(), true);
 	}
 

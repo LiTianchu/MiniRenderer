@@ -21,6 +21,8 @@ struct Shader_Global_Payload
     Matrix view_mat;
     Matrix projection_mat;
     Matrix viewport_mat;
+    Matrix screen_shadow_mat;
+    TGAImage *shadow_buffer;
     float zDepth;
 };
 

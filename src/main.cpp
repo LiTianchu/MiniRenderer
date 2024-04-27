@@ -16,13 +16,16 @@ const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red = TGAColor(255, 0, 0, 255);
 const TGAColor green = TGAColor(0, 255, 0, 255);
 const TGAColor blue = TGAColor(0, 0, 255, 255);
-Vec3f camera_pos = Vec3f(0, 1, 3);
-Vec3f light_dir = Vec3f(1, -1, 1).normalize();
+Vec3f camera_pos = Vec3f(1, 1, 3);
+Vec3f light_dir = Vec3f(1, 1, 1);
+//Vec3f light_pos = Vec3f(7, 2, 0);
 float main_light_intensity = 2.0f;
 Vec3f center_pos = Vec3f(0, 0, 0);
-Vec3f up_dir = Vec3f(0,1,0);
+Vec3f up_dir = Vec3f(0, 1, 0);
 float far = 1;
 float near = 0;
+int img_w = 1920;
+int img_h = 1920;
 
 enum Mode
 {
@@ -35,7 +38,7 @@ enum Mode
 
 int main(int argc, char **argv)
 {
-    TGAImage image(1920, 1920, TGAImage::RGB);
+    TGAImage image(img_w, img_h, TGAImage::RGB);
 
     float *zbuffer = new float[image.get_width() * image.get_height()];
 
@@ -48,13 +51,13 @@ int main(int argc, char **argv)
         normal_map.read_tga_file("obj/african_head/african_head_nm.tga");
         he_model_loaded.set_diffuse_texture(&diffuse_texture);
         he_model_loaded.set_normal_map_texture(&normal_map);
-        
+
         std::cout << "Rendering " << argv[1] << " model" << std::endl;
 
-        Engine engine = Engine(light_dir, main_light_intensity, camera_pos, zbuffer, &image);
-        
+        Engine engine = Engine(light_dir.normalize(), main_light_intensity, camera_pos, zbuffer);
+
         Shader_Global_Payload shader_payload = Shader_Global_Payload();
-        shader_payload.main_light_dir = light_dir;
+        shader_payload.main_light_dir = light_dir.normalize();
         shader_payload.main_light_intensity = main_light_intensity;
         shader_payload.camera_pos = camera_pos;
         shader_payload.model = &he_model_loaded;
@@ -78,46 +81,67 @@ int main(int argc, char **argv)
         shader_payload.view_mat = view_matrix;
         shader_payload.projection_mat = projection_matrix;
         shader_payload.viewport_mat = viewport_matrix;
-        
+
         // he_model_loaded.qem_simplify(200);
         // HEModel he_model_loaded = HEModel("obj/diablo3_pose/diablo3_pose.obj");
         if (std::string(argv[1]) == "wireframe")
         {
-            engine.render_model_wireframe(he_model_loaded);
-
+            engine.render_model_wireframe(he_model_loaded, &image);
         }
         else if (std::string(argv[1]) == "flat")
         {
-            engine.render_shaded_model(he_model_loaded, new Flat_Shader(shader_payload));
-
+            engine.render_shaded_model(he_model_loaded, new Flat_Shader(shader_payload), &image);
         }
         else if (std::string(argv[1]) == "smooth")
         {
-            engine.render_shaded_model(he_model_loaded, new Gouraud_Shader(shader_payload));
+            engine.render_shaded_model(he_model_loaded, new Gouraud_Shader(shader_payload), &image);
         }
         else if (std::string(argv[1]) == "texture")
         {
             // texture.read_tga_file("obj/diablo3_pose/diablo3_pose_diffuse.tga");
-            engine.render_shaded_model(he_model_loaded, new Diffuse_Map_Shader(shader_payload));
+            engine.render_shaded_model(he_model_loaded, new Diffuse_Map_Shader(shader_payload), &image);
         }
-        else if (std::string(argv[1]) == "shaded-wireframe")
-        {
-            engine.render_shaded_model(he_model_loaded, new Flat_Shader(shader_payload));
-            engine.render_model_wireframe(he_model_loaded);
-        }
+        // else if (std::string(argv[1]) == "shaded-wireframe")
+        // {
+        //     engine.render_shaded_model(he_model_loaded, new Flat_Shader(shader_payload), &image);
+        //     engine.render_model_wireframe(he_model_loaded, &image);
+        // }
         else if (std::string(argv[1]) == "uv")
         {
-            engine.render_shaded_model(he_model_loaded, new UV_Shader(shader_payload));
+            engine.render_shaded_model(he_model_loaded, new UV_Shader(shader_payload), &image);
         }
-        else if(std::string(argv[1]) == "normal"){
-            engine.render_shaded_model(he_model_loaded, new Normal_Map_Shader(shader_payload));
-        }
-        else if(std::string(argv[1]) == "depth"){
-            engine.render_shaded_model(he_model_loaded, new Depth_Shader(shader_payload));
-        }
-        else
+        else if (std::string(argv[1]) == "normal")
         {
-            std::cout << "Argument is not valid" << std::endl;
+            engine.render_shaded_model(he_model_loaded, new Normal_Map_Shader(shader_payload), &image);
+        }
+        else if (std::string(argv[1]) == "depth")
+        {
+            engine.render_shaded_model(he_model_loaded, new Depth_Shader(shader_payload), &image);
+        }
+        else if (std::string(argv[1]) == "shadowmap")
+        {
+            // all passes
+            engine.render_shaded_model(he_model_loaded, new Normal_Map_Shader(shader_payload), &image);
+            engine.reset_zbuffer();
+            // shadow mapping first pass
+            Shader_Global_Payload shadow_payload = Shader_Global_Payload();
+            Matrix shadow_view = Matrix::model_view(light_dir, center_pos, up_dir);
+            //Matrix shadow_proj = Matrix::persp_projection(light_dir);
+            Matrix shadow_viewport = Matrix::viewport(0, 0, img_w, img_h, near, far);
+            Matrix shadow_transform = shadow_viewport * shadow_view;
+            shadow_payload.transform_matrix = shadow_transform;
+            shadow_payload.zDepth = far - near;
+
+            // render shadow buffer
+            TGAImage shadow_buffer = TGAImage(image.get_width(), image.get_height(), TGAImage::RGB);
+            engine.render_shaded_model(he_model_loaded, new Depth_Shader(shadow_payload), &shadow_buffer);
+            engine.reset_zbuffer();
+            //std::cout << "Argument is not valid" << std::endl;
+            Matrix screen_shadow_mat = shadow_transform * shader_payload.transform_matrix.inverse().first;
+            shader_payload.screen_shadow_mat = screen_shadow_mat;
+            shader_payload.shadow_buffer = &shadow_buffer;
+            engine.render_shaded_model(he_model_loaded, new Normal_Map_Shader(shader_payload), &image);
+            //image = shadow_buffer;
         }
     }
     else

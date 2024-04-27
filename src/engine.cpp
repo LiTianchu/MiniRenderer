@@ -7,8 +7,10 @@ const TGAColor red = TGAColor(255, 0, 0, 255);
 const TGAColor green = TGAColor(0, 255, 0, 255);
 const TGAColor blue = TGAColor(0, 0, 255, 255);
 
-void Engine::render_shaded_model(HEModel model, Shader *shader)
+void Engine::render_shaded_model(HEModel model, Shader *shader, TGAImage *frame_buffer)
 {
+    //TGAImage frame_buffer = TGAImage(img_w, img_h, TGAImage::RGB);
+
     // for each face in the model
     for (std::set<Face *>::iterator face_itr = model.faces_begin(); face_itr != model.faces_end(); ++face_itr)
     {
@@ -31,28 +33,32 @@ void Engine::render_shaded_model(HEModel model, Shader *shader)
             j++;
         } while (h_edge != (*face_itr)->h);
 
-         Vec3f face_normal = Math::get_face_normal(tri).normalize();
-         for(int i = 0; i < processed_vertices.size(); i++){
+        Vec3f face_normal = Math::get_face_normal(tri).normalize();
+        for (int i = 0; i < processed_vertices.size(); i++)
+        {
             processed_vertices[i].face_norm = face_normal;
-         }
+        }
 
-        rasterize_triangle(processed_vertices, shader);
+        rasterize_triangle(processed_vertices, shader, frame_buffer);
     }
+    //return frame_buffer;
 }
 
-void Engine::render_model_wireframe(HEModel model)
+void Engine::render_model_wireframe(HEModel model, TGAImage *frame_buffer)
 {
-     bool faces_visited[model.num_of_faces()] = {false};
-    Engine::wireframe_dfs(**model.faces_begin(), faces_visited);
+    //TGAImage frame_buffer = TGAImage(img_h, img_w, TGAImage::RGB);
+    bool faces_visited[model.num_of_faces()] = {false};
+    Engine::wireframe_dfs(**model.faces_begin(), faces_visited, frame_buffer);
+    //return frame_buffer;
 }
 
-void Engine::wireframe_dfs(const Face& f, bool (&faces_visited)[])
+void Engine::wireframe_dfs(const Face &f, bool (&faces_visited)[], TGAImage *frame_buffer)
 {
     if (faces_visited[f.index])
     {
         return;
     }
-    //draw the face
+    // draw the face
     HEdge *h_edge = f.h;
     std::vector<Face> neighbor_faces;
     do
@@ -63,7 +69,7 @@ void Engine::wireframe_dfs(const Face& f, bool (&faces_visited)[])
         Vertex *vertex_end = h_edge->v;
         Vec3 pos_start = vertex_start->pos;
         Vec3 pos_end = vertex_end->pos;
-        
+
         HEdge *pair = h_edge->pair;
         if (pair != NULL)
         {
@@ -72,25 +78,24 @@ void Engine::wireframe_dfs(const Face& f, bool (&faces_visited)[])
         }
 
         // map the world coordinates to image coordinates
-        int x0 = (pos_start.x + 1.0) / 2.0 * frame_buffer -> get_width();
-        int y0 = (pos_start.y + 1.0) / 2.0 * frame_buffer -> get_height();
-        int x1 = (pos_end.x + 1.0) / 2.0 * frame_buffer -> get_width();
-        int y1 = (pos_end.y + 1.0) / 2.0 * frame_buffer -> get_height();
-        
-        draw_line(x0, y0, x1, y1, blue);
+        int x0 = (pos_start.x + 1.0) / 2.0 * frame_buffer->get_width();
+        int y0 = (pos_start.y + 1.0) / 2.0 * frame_buffer->get_height();
+        int x1 = (pos_end.x + 1.0) / 2.0 * frame_buffer->get_width();
+        int y1 = (pos_end.y + 1.0) / 2.0 * frame_buffer->get_height();
+
+        draw_line(x0, y0, x1, y1, blue, frame_buffer);
         h_edge = h_edge->next;
     } while (h_edge != f.h);
 
     faces_visited[f.index] = true;
 
-    for(Face& n : neighbor_faces)
+    for (Face &n : neighbor_faces)
     {
-        wireframe_dfs(n, faces_visited);
+        wireframe_dfs(n, faces_visited, frame_buffer);
     }
-    
 }
 
-void Engine::rasterize_triangle(std::vector<V2F> vert_data, Shader *shader)
+void Engine::rasterize_triangle(std::vector<V2F> vert_data, Shader *shader, TGAImage *frame_buffer)
 {
     //  extract the vertex data
     Vec3f pts[] = {vert_data[0].pos, vert_data[1].pos, vert_data[2].pos};
@@ -129,20 +134,20 @@ void Engine::rasterize_triangle(std::vector<V2F> vert_data, Shader *shader)
             {
                 // interpolation stage
                 z_buffer[zbuffer_index] = interpolated_z; // update z buffer
-                interpolated_v2f.pos = Vec3f(x,y,interpolated_z);
-                
-                Vec3 interpolated_norm = {b_coord.x * norms[0].x  + b_coord.y * norms[1].x + b_coord.z * norms[2].x,
-                                          b_coord.x * norms[0].y  + b_coord.y * norms[1].y + b_coord.z * norms[2].y,
-                                          b_coord.x * norms[0].z  + b_coord.y * norms[1].z + b_coord.z * norms[2].z};
+                interpolated_v2f.pos = Vec3f(x, y, interpolated_z);
+
+                Vec3 interpolated_norm = {b_coord.x * norms[0].x + b_coord.y * norms[1].x + b_coord.z * norms[2].x,
+                                          b_coord.x * norms[0].y + b_coord.y * norms[1].y + b_coord.z * norms[2].y,
+                                          b_coord.x * norms[0].z + b_coord.y * norms[1].z + b_coord.z * norms[2].z};
                 interpolated_v2f.norm = interpolated_norm.normalize();
 
                 float interpolated_u = b_coord.x * tex_coords[0].u + b_coord.y * tex_coords[1].u + b_coord.z * tex_coords[2].u;
                 float interpolated_v = b_coord.x * tex_coords[0].v + b_coord.y * tex_coords[1].v + b_coord.z * tex_coords[2].v;
-                
+
                 interpolated_v2f.tex_coord = Vec2f(interpolated_u, interpolated_v);
                 interpolated_v2f.base_color = TGAColor(255, 255, 255, 255).to_vec3();
                 interpolated_v2f.face_norm = vert_data[0].face_norm.normalize();
-                
+
                 // obtain shaded color using shader
                 Vec3i color_vector = shader->fragment_shader(interpolated_v2f);
                 TGAColor shade_color = TGAColor(color_vector);
@@ -152,7 +157,7 @@ void Engine::rasterize_triangle(std::vector<V2F> vert_data, Shader *shader)
     }
 }
 
-void Engine::draw_line(int x0, int y0, int x1, int y1, TGAColor color)
+void Engine::draw_line(int x0, int y0, int x1, int y1, TGAColor color, TGAImage *frame_buffer)
 {
     bool steep = false;
     /*if y is greator than x, the line drawn will have gaps,

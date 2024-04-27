@@ -20,7 +20,7 @@ class Depth_Shader : public Shader{
     virtual Vec3i fragment_shader(const V2F& v2f){
         float z = v2f.pos.z;
         // map z to 0-255
-        z = z/global_payload.zDepth * 255.0f;
+        z = std::clamp(z/global_payload.zDepth * 255.0f, 0.0f, 255.0f);
 
         //float light_intensity = std::clamp(global_payload.main_light_dir * v2f.norm * global_payload.main_light_intensity, 0.0f, 1.0f);
         return Vec3i(z, z, z);

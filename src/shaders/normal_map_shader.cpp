@@ -19,6 +19,17 @@ class Normal_Map_Shader : public Shader{
     }
 
     virtual Vec3i fragment_shader(const V2F& v2f){
+        float shadow_coeff = 1.0f;
+        if(global_payload.shadow_buffer != nullptr){
+            //std::cout << "shadow buffer not null" << std::endl;
+            Vec4f shadow_buff_coord = Math::to_Vec4<float>(global_payload.screen_shadow_mat * Math::to_Matrix4(v2f.pos));
+            shadow_buff_coord = shadow_buff_coord/shadow_buff_coord.w;
+            //int shadow_buff_idx = (int)(shadow_buff_coord.x) + (int)(shadow_buff_coord.y) * global_payload.shadow_buffer->get_width();
+            float shadow_buff_val = global_payload.shadow_buffer->get(int(shadow_buff_coord.x), int(shadow_buff_coord.y)).r / 255.0f;
+            //std::cout << "shadow_buff_val: " << shadow_buff_val << "z: " << shadow_buff_coord.z <<std::endl;
+            //std::cout << "has shadow: " << (shadow_buff_val > shadow_buff_coord.z) << std::endl;
+            shadow_coeff = 0.3 + 0.7 * (shadow_buff_val < shadow_buff_coord.z/global_payload.zDepth);
+        }
         TGAImage* texture = global_payload.model->get_diffuse_texture();
         TGAImage* normal_map = global_payload.model->get_normal_map_texture();
         TGAColor normal = normal_map->get(normal_map->get_width()*v2f.tex_coord.u, 
@@ -31,7 +42,7 @@ class Normal_Map_Shader : public Shader{
         //std::cout << "mapped_light_intensity: " << mapped_light_intensity << std::endl;
         mapped_light_intensity = std::clamp(mapped_light_intensity, 0.0f, 1.0f);
         //std::cout << "clamped_light_intensity: " << mapped_light_intensity << std::endl;
-        Vec3i final_color = tex_color.to_vec3() * mapped_light_intensity;                      
+        Vec3i final_color = tex_color.to_vec3() * mapped_light_intensity * shadow_coeff;                      
         return final_color;
     }
     
