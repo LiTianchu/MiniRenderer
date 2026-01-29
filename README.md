@@ -3,9 +3,9 @@ A project built upon the famous Tinyrenderer project https://github.com/ssloy/ti
 
 ![Showcase](./results/complete_diablo.png)
 
-## Build (CMake)
+## Build
 
-### One-liner (scripts)
+### Build Script
 
 ```bash
 chmod +x scripts/*.sh
