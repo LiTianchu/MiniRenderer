@@ -12,7 +12,7 @@ chmod +x scripts/*.sh
 ./scripts/build.sh -t Release
 ./scripts/run.sh --ssao --model head
 
-# switch model (defaults to african head)
+# switch model (defaults to head model)
 ./scripts/run.sh ssao boggie
 ./scripts/run.sh normal diablo3_pose
 ```
@@ -24,8 +24,6 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
 ./build/minirenderer flat head
 ```
-
-Note: the helper scripts always use a single build folder: `./build`.
 
 ## Runtime flags
 
@@ -114,36 +112,36 @@ When using `scripts/run.sh`, that is the repo root, so you’ll find it at [outp
 
 **Demo 1 - Wireframe**: edge-only render of the mesh.
 
-![Demo1](./results/wireframe_diablo.png)
+<img src="./results/wireframe_diablo.png" alt="Demo1" width="400" />
 
 **Demo 2 - Depth buffer**: visualized depth (z) output.
 
-![Demo2](./results/depth_buffer_diablo.png)
+<img src="./results/depth_buffer_diablo.png" alt="Demo2" width="400" />
 
 **Demo 3 - Flat shading**: per-face lighting.
 
-![Demo3](./results/flat_diablo.png)
+<img src="./results/flat_diablo.png" alt="Demo3" width="400" />
 
 **Demo 4 - Smooth (Gouraud) shading**: per-vertex lighting interpolation.
 
-![Demo4](./results/smooth_diablo.png)
+<img src="./results/smooth_diablo.png" alt="Demo4" width="400" />
 
 **Demo 5 - UV**: UV coordinates mapped to colors.
 
-![Demo5](./results/uv_diablo.png)
+<img src="./results/uv_diablo.png" alt="Demo5" width="400" />
 
 **Demo 6 - Texture (diffuse map)**: textured render with the diffuse/albedo map.
 
-![Demo6](./results/texture_diablo.png)
+<img src="./results/texture_diablo.png" alt="Demo6" width="400" />
 
 **Demo 7 - Normal + shadow mapping**: normal-mapped lighting with shadow test.
 
-![Demo7](./results/texture_normal_shadowmap_diablo.png)
+<img src="./results/texture_normal_shadowmap_diablo.png" alt="Demo7" width="400" />
 
 **Demo 8 - SSAO**: screen-space ambient occlusion mask (grayscale).
 
-![Demo8](./results/ssao_diablo.png)
+<img src="./results/ssao_diablo.png" alt="Demo8" width="400" />
 
 **Demo 9 - Complete**: normal + texture + shadowmap, then SSAO applied.
 
-![Demo9](./results/complete_diablo.png)
+<img src="./results/complete_diablo.png" alt="Demo9" width="400" />
