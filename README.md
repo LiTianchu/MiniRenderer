@@ -1,6 +1,8 @@
 # MiniRenderer 
 A project built upon the famous Tinyrenderer project https://github.com/ssloy/tinyrenderer
 
+![Showcase](./results/complete_diablo.png)
+
 ## Build (CMake)
 
 ### One-liner (scripts)
@@ -112,7 +114,7 @@ When using `scripts/run.sh`, that is the repo root, so you’ll find it at [outp
 
 **Demo 1 - Wireframe**: edge-only render of the mesh.
 
-![Demo1](./results/wireframe_diablo.tga)
+![Demo1](./results/wireframe_diablo.png)
 
 **Demo 2 - Depth buffer**: visualized depth (z) output.
 
@@ -120,28 +122,28 @@ When using `scripts/run.sh`, that is the repo root, so you’ll find it at [outp
 
 **Demo 3 - Flat shading**: per-face lighting.
 
-![Demo3](./results/flat_diablo.tga)
+![Demo3](./results/flat_diablo.png)
 
 **Demo 4 - Smooth (Gouraud) shading**: per-vertex lighting interpolation.
 
-![Demo4](./results/smooth_diablo.tga)
+![Demo4](./results/smooth_diablo.png)
 
 **Demo 5 - UV**: UV coordinates mapped to colors.
 
-![Demo5](./results/uv_diablo.tga)
+![Demo5](./results/uv_diablo.png)
 
 **Demo 6 - Texture (diffuse map)**: textured render with the diffuse/albedo map.
 
-![Demo6](./results/texture_diablo.tga)
+![Demo6](./results/texture_diablo.png)
 
 **Demo 7 - Normal + shadow mapping**: normal-mapped lighting with shadow test.
 
-![Demo7](./results/texture_normal_shadowmap_diablo.tga)
+![Demo7](./results/texture_normal_shadowmap_diablo.png)
 
 **Demo 8 - SSAO**: screen-space ambient occlusion mask (grayscale).
 
-![Demo8](./results/ssao_diablo.tga)
+![Demo8](./results/ssao_diablo.png)
 
 **Demo 9 - Complete**: normal + texture + shadowmap, then SSAO applied.
 
-![Demo9](./results/complete_diablo.tga)
+![Demo9](./results/complete_diablo.png)
