@@ -3,7 +3,7 @@
 
 #include "../geometry.h"
 #include "../tgaimage.h"
-#include "../he_model.h"
+#include "../he_Model.h"
 #include "../math.h"
 #include <vector>
 #include <algorithm>

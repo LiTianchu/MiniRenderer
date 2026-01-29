@@ -36,7 +36,14 @@ class Normal_Map_Shader : public Shader{
                                     normal_map->get_height()*(1.0-v2f.tex_coord.v));
         TGAColor tex_color = texture->get(texture->get_width()*v2f.tex_coord.u, 
                                     texture->get_height()*(1.0-v2f.tex_coord.v));
-        Vec3f normal_vec = Vec3f(normal.r, normal.g, normal.b).normalize()*2.0f - Vec3f(1.0f, 1.0f, 1.0f);
+        // Normal maps encode components in [0,255]. Decode to [-1,1] per channel, then normalize.
+        // The previous implementation normalized the RGB vector first, which skews the decoded normal and makes lighting too dark.
+        Vec3f normal_vec(
+            (normal.r / 255.0f) * 2.0f - 1.0f,
+            (normal.g / 255.0f) * 2.0f - 1.0f,
+            (normal.b / 255.0f) * 2.0f - 1.0f
+        );
+        normal_vec.normalize();
         //std::cout << "normal_vec: " << normal_vec << std::endl;
         float mapped_light_intensity = normal_vec * global_payload.main_light_dir * global_payload.main_light_intensity;
         //std::cout << "mapped_light_intensity: " << mapped_light_intensity << std::endl;
