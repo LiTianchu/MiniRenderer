@@ -112,36 +112,36 @@ When using `scripts/run.sh`, that is the repo root, so you’ll find it at [outp
 
 **Demo 1 - Wireframe**: edge-only render of the mesh.
 
-<img src="./results/wireframe_diablo.png" alt="Demo1" width="400" />
+<img src="./results/wireframe_diablo.png" alt="Demo1" width="500" />
 
 **Demo 2 - Depth buffer**: visualized depth (z) output.
 
-<img src="./results/depth_buffer_diablo.png" alt="Demo2" width="400" />
+<img src="./results/depth_buffer_diablo.png" alt="Demo2" width="500" />
 
 **Demo 3 - Flat shading**: per-face lighting.
 
-<img src="./results/flat_diablo.png" alt="Demo3" width="400" />
+<img src="./results/flat_diablo.png" alt="Demo3" width="500" />
 
 **Demo 4 - Smooth (Gouraud) shading**: per-vertex lighting interpolation.
 
-<img src="./results/smooth_diablo.png" alt="Demo4" width="400" />
+<img src="./results/smooth_diablo.png" alt="Demo4" width="500" />
 
 **Demo 5 - UV**: UV coordinates mapped to colors.
 
-<img src="./results/uv_diablo.png" alt="Demo5" width="400" />
+<img src="./results/uv_diablo.png" alt="Demo5" width="500" />
 
 **Demo 6 - Texture (diffuse map)**: textured render with the diffuse/albedo map.
 
-<img src="./results/texture_diablo.png" alt="Demo6" width="400" />
+<img src="./results/texture_diablo.png" alt="Demo6" width="500" />
 
 **Demo 7 - Normal + shadow mapping**: normal-mapped lighting with shadow test.
 
-<img src="./results/texture_normal_shadowmap_diablo.png" alt="Demo7" width="400" />
+<img src="./results/texture_normal_shadowmap_diablo.png" alt="Demo7" width="500" />
 
 **Demo 8 - SSAO**: screen-space ambient occlusion mask (grayscale).
 
-<img src="./results/ssao_diablo.png" alt="Demo8" width="400" />
+<img src="./results/ssao_diablo.png" alt="Demo8" width="500" />
 
 **Demo 9 - Complete**: normal + texture + shadowmap, then SSAO applied.
 
-<img src="./results/complete_diablo.png" alt="Demo9" width="400" />
+<img src="./results/complete_diablo.png" alt="Demo9" width="500" />
