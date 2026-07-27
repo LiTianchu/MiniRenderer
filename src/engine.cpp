@@ -1,6 +1,5 @@
 #include "engine.h"
 #include "math.h"
-#include <iostream>
 
 const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red = TGAColor(255, 0, 0, 255);

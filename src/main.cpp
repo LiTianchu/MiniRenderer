@@ -1,6 +1,5 @@
 #include "engine.h"
 #include "he_model.h"
-#include "model.h"
 #include "shaders/depth_shader.cpp"
 #include "shaders/diffuse_map_shader.cpp"
 #include "shaders/empty_shader.cpp"
@@ -14,7 +13,6 @@
 #include <cmath>
 #include <iostream>
 #include <limits>
-#include <stdio.h>
 #include <string>
 
 #ifndef M_PI
@@ -27,7 +25,6 @@ const TGAColor green = TGAColor(0, 255, 0, 255);
 const TGAColor blue = TGAColor(0, 0, 255, 255);
 Vec3f camera_pos = Vec3f(1, 1, 3);
 Vec3f light_dir = Vec3f(1, 1, 1);
-// Vec3f light_pos = Vec3f(7, 2, 0);
 float main_light_intensity = 2.0f;
 Vec3f center_pos = Vec3f(0, 0, 0);
 Vec3f up_dir = Vec3f(0, 1, 0);
@@ -124,7 +121,6 @@ int main(int argc, char **argv) {
     shader_payload.projection_mat = projection_matrix;
     shader_payload.viewport_mat = viewport_matrix;
 
-    // he_model_loaded.qem_simplify(200);
     // HEModel he_model_loaded = HEModel("obj/diablo3_pose/diablo3_pose.obj");
     if (mode == "wireframe") {
       engine.render_model_wireframe(he_model_loaded, &image);
