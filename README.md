@@ -1,5 +1,5 @@
 # MiniRenderer 
-A project built upon the famous Tinyrenderer project https://github.com/ssloy/tinyrenderer
+A project built for learning purposes, based on the famous 3D graphics educational project Tinyrenderer https://github.com/ssloy/tinyrenderer
 
 ![Showcase](./results/complete_diablo.png)
 
