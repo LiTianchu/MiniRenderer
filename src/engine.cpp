@@ -39,14 +39,11 @@ void Engine::render_shaded_model(HEModel model, Shader *shader,
 
     rasterize_triangle(processed_vertices, shader, frame_buffer);
   }
-  // return frame_buffer;
 }
 
 void Engine::render_model_wireframe(HEModel model, TGAImage *frame_buffer) {
-  // TGAImage frame_buffer = TGAImage(img_h, img_w, TGAImage::RGB);
   bool faces_visited[model.num_of_faces()] = {false};
   Engine::wireframe_dfs(**model.faces_begin(), faces_visited, frame_buffer);
-  // return frame_buffer;
 }
 
 void Engine::wireframe_dfs(const Face &f, bool (&faces_visited)[],
