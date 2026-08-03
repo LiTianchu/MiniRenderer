@@ -41,9 +41,7 @@ public:
     TGAColor tex_color =
         texture->get(texture->get_width() * v2f.tex_coord.u,
                      texture->get_height() * (1.0 - v2f.tex_coord.v));
-    // Normal maps encode components in [0,255]. Decode to [-1,1] per channel,
-    // then normalize. The previous implementation normalized the RGB vector
-    // first, which skews the decoded normal and makes lighting too dark.
+
     Vec3f normal_vec((normal.r / 255.0f) * 2.0f - 1.0f,
                      (normal.g / 255.0f) * 2.0f - 1.0f,
                      (normal.b / 255.0f) * 2.0f - 1.0f);
