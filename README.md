@@ -18,7 +18,6 @@ chmod +x scripts/*.sh
 
 ## Runtime flags
 
-The renderer is built as an “engine style” binary: all render modes are compiled in.
 Pick the mode and model at runtime:
 
 ```bash
@@ -26,7 +25,7 @@ Pick the mode and model at runtime:
 ./scripts/run.sh --ssao --model diablo
 ./scripts/run.sh --mode normal --model diablo3_pose
 
-# tweak lighting and rotate model (no rebuild needed)
+# tweak lighting and rotate model
 ./scripts/run.sh --normal --model head --intensity 3.0 --yaw 45
 ```
 
