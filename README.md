@@ -1,5 +1,6 @@
-# MiniRenderer 
-A project built for learning purposes, based on the famous 3D graphics educational project Tinyrenderer https://github.com/ssloy/tinyrenderer
+# MiniRenderer
+
+A project built for learning purposes, based on the famous 3D graphics educational project Tinyrenderer <https://github.com/ssloy/tinyrenderer>
 
 ![Showcase](./results/complete_diablo.png)
 
@@ -59,7 +60,7 @@ Basic:
 Modes:
 
 - `--mode <mode>` where `<mode>` is one of:
-	- `wireframe`, `flat`, `smooth`, `texture`, `uv`, `normal`, `depth`, `shadowmap`, `ssao`, `complete`
+ 	- `wireframe`, `flat`, `smooth`, `texture`, `uv`, `normal`, `depth`, `shadowmap`, `ssao`, `complete`
 
 Convenience mode flags (equivalent to `--mode <mode>`):
 
@@ -77,9 +78,9 @@ Convenience mode flags (equivalent to `--mode <mode>`):
 Model selection:
 
 - `--model <model>` where `<model>` is one of:
-	- `head` (default)
-	- `african_head` (alias for `head`)
-	- `diablo3_pose` (aliases: `diablo`, `diablo3`)
+ 	- `head` (default)
+ 	- `african_head` (alias for `head`)
+ 	- `diablo3_pose` (aliases: `diablo`, `diablo3`)
 
 Lighting / transform tuning:
 
