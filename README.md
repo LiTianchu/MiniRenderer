@@ -1,4 +1,4 @@
-# MiniRenderer
+# Mini Software Renderer
 
 A project built for learning purposes, based on the famous 3D graphics educational project Tinyrenderer <https://github.com/ssloy/tinyrenderer>
 
